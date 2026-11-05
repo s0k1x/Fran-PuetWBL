@@ -1,7 +1,9 @@
 <title>Planta Caminable</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400&family=Instrument+Serif:ital@0;1&display=swap">
+<meta name="description" content="Recorre cualquier casa en 3D desde el navegador: realismo en tiempo real, planos automáticos e inteligencia artificial.">
+<meta name="theme-color" content="#050505">
 <style>
 /* Layout: negro absoluto. Una frase, una acción y una trama de puntos que recuerda a una nube de escaneo. Una sola apariencia, oscura, por decisión. */
 :root {
@@ -216,9 +218,11 @@ input[type="range"] { accent-color: var(--texto); }
 #chat p { padding: 8px 11px; border-radius: 10px; background: var(--hover); font-size: 13px; line-height: 1.45; margin: 0; white-space: pre-line; }
 #chat { max-height: 34vh; overflow: auto; }
 #app:not(.dentro) #ficha { left: auto; right: var(--gr); bottom: auto; top: calc(58px + env(safe-area-inset-top, 0px)); z-index: 5; }
+/*__ESTILO__*/
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
+<div id="cargador" role="status" aria-label="Cargando"><div class="caja"><span data-i="logo" class="logoC"></span><span class="nombre">Planta Caminable</span><div class="linea"><i id="carBar"></i></div><span class="pct" id="carPct">0 %</span></div></div>
 <div id="app">
   <canvas id="vista" tabindex="0" aria-label="Vista 3D. Usa W, A, S y D para caminar y arrastra para mirar."></canvas>
   <div id="etiquetas" hidden></div>
@@ -228,29 +232,31 @@ input[type="range"] { accent-color: var(--texto); }
   <div id="etiP" hidden></div>
   <section id="portada">
     <header id="barraP">
-      <span id="marca">Planta Caminable</span>
-      <nav aria-label="Controles">
-        <button type="button" data-p="vista" aria-expanded="false">Vista</button><button type="button" data-p="rec" aria-expanded="false">Recorrido</button><button type="button" data-p="amb" aria-expanded="false">Ambiente</button><button type="button" data-p="herr" aria-expanded="false">Herramientas</button><button type="button" data-p="ia" aria-expanded="false">IA</button><button type="button" data-p="aju" aria-expanded="false">Ajustes</button><button type="button" id="bpCuenta">Cuenta</button>
+      <a id="marca" href="./" data-i="logo">Planta Caminable</a>
+      <nav aria-label="Principal">
+        <button type="button" data-p="vista" aria-expanded="false">Explorar<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="amb" aria-expanded="false">Ambiente<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="rec" aria-expanded="false">Recorrido</button><button type="button" data-p="herr" aria-expanded="false">Herramientas<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="ia" aria-expanded="false"><i class="punto-ia"></i>IA</button><button type="button" data-p="aju" aria-expanded="false">Ajustes</button>
       </nav>
-      <label class="azul" for="archivo">Cargar escaneo</label>
+      <div class="acc">
+        <button type="button" id="bpCuenta" class="fantasma" data-i="usuario"><span class="txtC">Iniciar sesión</span></button>
+        <label class="azul" for="archivo" data-i="subir">Cargar escaneo</label>
+        <button type="button" id="bMenu" aria-label="Abrir menú" aria-expanded="false" data-i="menu"></button>
+      </div>
     </header>
     <div id="panelP" hidden></div>
-    <i id="sombraP" aria-hidden="true"></i><i id="avance" aria-hidden="true"></i>
+    <i id="sombraP" aria-hidden="true"></i><i id="avance" aria-hidden="true"></i><nav id="indice" aria-label="Secciones"></nav><div id="desliza" aria-hidden="true"><span>Desliza</span><i></i></div>
 
     <section class="sec" id="s-que">
       <div class="txt">
-        <span class="eti">Qué es</span>
-        <h1>Camina por tu escaneo.</h1>
-        <p>Convierte un modelo 3D en un espacio que se recorre a pie desde el navegador. Esta villa conceptual es el ejemplo.</p>
-        <div class="cifras"><div><b>895 m²</b><span>en dos plantas</span></div><div><b>121</b><span>objetos en el modelo</span></div><div><b>1:1</b><span>escala real</span></div></div>
+        <span class="pildora aparece"><i>Nuevo</i>Realismo en tiempo real e IA</span>
+        <h1 class="revela"><span class="l">Camina por</span> <span class="l">tu <em>escaneo</em>.</span></h1>
+        <p class="aparece" style="animation-delay:.35s">Convierte cualquier modelo 3D en un espacio que se recorre a pie, con luz real, desde el navegador. Esta villa es el ejemplo.</p>
+        <div class="cifras aparece" style="animation-delay:.5s"><div><b data-n="895" data-suf=" m²">895 m²</b><span>en dos plantas</span></div><div><b data-n="121">121</b><span>objetos en el modelo</span></div><div><b>1:1</b><span>escala real</span></div></div>
         <div id="centro">
           <p id="error" hidden></p>
-          <div id="acciones">
-            <label id="cargar" for="archivo">Cargar escaneo</label>
-            <button id="bUnir" type="button">Unir varios escaneos</button>
-            <button id="bCuenta" type="button">Mis proyectos</button>
-            <button id="muestra" type="button">Ver casa de prueba</button>
-            <button id="verH" type="button">Herramientas</button>
+          <div id="acciones" class="aparece" style="animation-delay:.65s">
+            <button id="muestra" type="button">Recorrer la villa<svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+            <label id="cargar" for="archivo">Cargar mi escaneo</label>
+            <div class="secund"><button id="bUnir" type="button">Unir varios escaneos</button><button id="bCuenta" type="button">Mis proyectos</button><button id="verH" type="button">Todas las funciones</button></div>
           </div>
           <div id="progreso" hidden><div id="barra"><i></i></div><span id="estado" class="dato">Leyendo archivo</span></div>
         </div>
@@ -258,35 +264,35 @@ input[type="range"] { accent-color: var(--texto); }
     </section>
 
     <section class="sec" id="s-abre">
-      <div class="txt"><span class="eti">Por dentro</span><h2>Levanta la cubierta y entiende la casa.</h2><p>Cada parte del modelo se separa para enseñar lo que hay debajo: terrazas, dormitorios y suite.</p></div>
+      <div class="txt"><span class="eti"><b>02</b>Por dentro</span><h2>Levanta la cubierta y <em>entiende</em> la casa.</h2><p>Cada parte del modelo se separa para enseñar lo que hay debajo: terrazas, dormitorios y suite.</p></div>
     </section>
 
     <section class="sec">
-      <div class="txt"><span class="eti">Caminar</span><h2>Después, entra.</h2><p>Vestíbulo a doble altura. Andas en primera persona con colisión real: subes escaleras y las paredes te detienen.</p><div class="cifras"><div><b>1,6 m</b><span>altura de los ojos</span></div><div><b>WASD</b><span>o joystick táctil</span></div></div></div>
+      <div class="txt"><span class="eti"><b>03</b>Caminar</span><h2>Después, <em>entra</em>.</h2><p>Vestíbulo a doble altura. Andas en primera persona con colisión real: subes escaleras y las paredes te detienen.</p><div class="cifras"><div><b>1,6 m</b><span>altura de los ojos</span></div><div><b>WASD</b><span>o joystick táctil</span></div></div></div>
     </section>
 
     <section class="sec">
-      <div class="txt"><span class="eti">Luz</span><h2>Cada estancia, como si estuvieras allí.</h2><p>Salón principal de 73 m² con vistas a la piscina. Tú decides a dónde ir: nada se mueve solo.</p></div>
+      <div class="txt"><span class="eti"><b>04</b>Luz</span><h2>Cada estancia, como si <em>estuvieras</em> allí.</h2><p>Salón principal de 73 m² con vistas a la piscina. Tú decides a dónde ir: nada se mueve solo.</p></div>
     </section>
 
     <section class="sec" id="s-plano">
-      <div class="txt"><span class="eti">Plano</span><h2>Planta por planta.</h2><p>Detecta suelos, paredes y habitaciones, calcula superficies y exporta el plano con escala.</p><div class="cifras"><div><b>510 m²</b><span>planta baja</span></div><div><b>385 m²</b><span>planta alta</span></div></div></div>
+      <div class="txt"><span class="eti"><b>05</b>Plano</span><h2>Planta por <em>planta</em>.</h2><p>Detecta suelos, paredes y habitaciones, calcula superficies y exporta el plano con escala.</p><div class="cifras"><div><b>510 m²</b><span>planta baja</span></div><div><b>385 m²</b><span>planta alta</span></div></div></div>
     </section>
 
     <section class="sec" id="s-unir">
-      <div class="txt"><span class="eti">Capas y unión</span><h2>Separa plantas. Une escaneos.</h2><p>Abre el modelo por capas o sube varios escaneos con su plano: cada pieza encuentra su sitio y puedes corregirla a mano.</p></div>
+      <div class="txt"><span class="eti"><b>06</b>Capas y unión</span><h2>Separa plantas. <em>Une</em> escaneos.</h2><p>Abre el modelo por capas o sube varios escaneos con su plano: cada pieza encuentra su sitio y puedes corregirla a mano.</p></div>
     </section>
 
     <section class="sec" id="s-ia">
-      <div class="txt"><span class="eti">Inteligencia artificial</span><h2>Gemini entiende lo que ves.</h2><p>Lee el plano, nombra estancias, responde preguntas, hace inventario y escribe el anuncio.</p></div>
+      <div class="txt"><span class="eti"><b>07</b>Inteligencia artificial</span><h2>Pídeselo. <em>Lo hace.</em></h2><p>«Apaga las luces», «llévame a la cocina», «ponla de noche». Gemini lee el plano, nombra estancias, hace inventario y escribe el anuncio.</p></div>
     </section>
 
     <section class="sec" id="s-herr">
-      <div class="txt"><span class="eti">Herramientas</span><h2>Hasta el jardín y la piscina.</h2><p>Mide, anota, amuebla y comparte: cotas reales, puntos de información, salas multijugador, enlaces y estadísticas.</p></div>
+      <div class="txt"><span class="eti"><b>08</b>Herramientas</span><h2>Hasta el jardín y la <em>piscina</em>.</h2><p>Mide, anota, amuebla y comparte: cotas reales, puntos de información, salas multijugador, enlaces y estadísticas.</p></div>
     </section>
 
     <section class="sec" id="s-fin">
-      <div class="txt"><span class="eti">Empezar</span><h2>De noche, con sus propias luces. Tu espacio, en un enlace.</h2><p>GLB, OBJ, FBX, GLTF, DAE, PLY, STL, 3DS, 3MF, AMF, PCD, XYZ o ZIP.</p><label class="azul grande" for="archivo">Cargar escaneo</label></div>
+      <div class="txt"><span class="eti"><b>09</b>Empezar</span><h2>De noche, con sus luces. Tu espacio, <em>en un enlace</em>.</h2><p>GLB, OBJ, FBX, GLTF, DAE, PLY, STL, 3DS, 3MF, AMF, PCD, XYZ o ZIP.</p><label class="azul grande" for="archivo" data-i="subir">Cargar mi escaneo</label></div>
     </section>
   </section>
 
@@ -338,7 +344,8 @@ input[type="range"] { accent-color: var(--texto); }
     </div>
   </section>
 
-  <button id="esq" type="button" hidden>Planta Caminable</button>
+  <button id="esq" type="button" hidden data-i="logo"><span>Planta Caminable</span></button>
+  <div id="acceso" hidden role="dialog" aria-modal="true" aria-labelledby="accTit"></div>
   <div id="modoH" hidden><span id="modoTxt"></span><button id="salirH" type="button">Salir</button></div>
   <div id="crono" hidden></div>
   <div id="nGente" role="status" hidden></div>
@@ -358,9 +365,10 @@ input[type="range"] { accent-color: var(--texto); }
     </div>
     <span class="sep"></span>
     <div id="herr">
-      <button id="bPla" class="tool" type="button" aria-pressed="false">Plano</button>
-      <button id="bMaq" class="tool" type="button" aria-pressed="false">Maqueta</button>
-      <button id="bHer" class="tool" type="button" aria-label="Herramientas">Herramientas</button><button id="bAju" class="tool" type="button" aria-pressed="false" hidden>Ajustes</button>
+      <button id="bLuz" class="tool" type="button" aria-pressed="false" data-i="bombilla" hidden><span>Luces</span></button>
+      <button id="bPla" class="tool" type="button" aria-pressed="false" data-i="plano"><span>Plano</span></button>
+      <button id="bMaq" class="tool" type="button" aria-pressed="false" data-i="maqueta"><span>Maqueta</span></button>
+      <button id="bHer" class="tool" type="button" aria-label="Herramientas" data-i="rejilla"><span>Herramientas</span></button><button id="bAju" class="tool" type="button" aria-pressed="false" hidden>Ajustes</button>
     </div>
   </nav>
   <div id="aviso" role="status" hidden></div>
@@ -382,7 +390,7 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
   const fmt = (v, d = 2) => v.toLocaleString("es-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
   const calmo = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const tactil = matchMedia("(pointer: coarse)").matches;
-  const AJ_BASE = { calidad: 1.5, giro: true, texto: true, vel: 1, sens: 1, fov: 72, inv: false, voz: false, velRec: 1, amb: "Natural", fondo: "#000000", brillo: 1 };
+  const AJ_BASE = { efectos: null, calidad: 1.5, giro: true, texto: true, vel: 1, sens: 1, fov: 72, inv: false, voz: false, velRec: 1, amb: "Natural", fondo: "#000000", brillo: 1 };
   const Aj = Object.assign({}, AJ_BASE); try { Object.assign(Aj, JSON.parse(localStorage.getItem("pc:ajustes")) || {}); } catch (e) {}
   const guardaAj = () => { try { localStorage.setItem("pc:ajustes", JSON.stringify(Aj)); } catch (e) {} };
   const guarda = {
@@ -414,8 +422,8 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
   const hemi = new THREE.HemisphereLight(0xffffff, 0x4a4640, .55), sol = new THREE.DirectionalLight(0xfff2e0, 1.1); sol.castShadow = true; sol.shadow.mapSize.set(2048, 2048); sol.shadow.bias = -.0005; sol.shadow.normalBias = .03; luces.add(hemi, sol, sol.target);
   /* Luz real para modelos sin textura de escaneo: de día, al atardecer o de noche con sus propias lámparas */
   const LUCES = { Natural: { c: 0xfff1de, i: 2.2, h: .6, e: .8, d: [-.55, .75, .5], cielo: 0xcfe3f1 }, Amanecer: { c: 0xffd6ad, i: 1.7, h: .45, e: .6, d: [.8, .35, .5], cielo: 0xf3d9c4 }, Atardecer: { c: 0xffa566, i: 2, h: .3, e: .4, d: [-.85, .22, .4], cielo: 0xe9a36f }, Noche: { c: 0x8fa8d8, i: .25, h: .08, e: .12, d: [-.3, .8, .5], cielo: 0x0a0f1c }, Blanco: { c: 0xffffff, i: 1.4, h: 1, e: 1, d: [-.5, .8, .4], cielo: 0xf2f2f0 } };
-  function solEn(caja, n) { const L = LUCES[n] || LUCES.Natural, c = caja.getCenter(new THREE.Vector3()), R = caja.getSize(new THREE.Vector3()).length() * .55; sol.target.position.copy(c); sol.position.copy(c).addScaledVector(new THREE.Vector3(...L.d).normalize(), R * 1.6); Object.assign(sol.shadow.camera, { left: -R, right: R, top: R, bottom: -R, near: 1, far: R * 3.4 }); sol.shadow.camera.updateProjectionMatrix(); sol.color.setHex(L.c); sol.intensity = L.i; hemi.intensity = L.h; renderer.shadowMap.needsUpdate = true; return L; }
-  function pasaEnv(grupo, v) { grupo.traverse(o => { if (o.isMesh) [].concat(o.material).forEach(m => { if (m && m.isMeshStandardMaterial) { m.envMapIntensity = v; if (m.emissive && m.emissive.getHex()) m.emissiveIntensity = v < .2 ? 2.4 : 1; m.needsUpdate = false; } }); }); }
+  function solEn(caja, n) { const L = LUCES[n] || LUCES.Natural, c = caja.getCenter(new THREE.Vector3()), R = caja.getSize(new THREE.Vector3()).length() * .55; sol.target.position.copy(c); sol.position.copy(c).addScaledVector(new THREE.Vector3(...L.d).normalize(), R * 1.6); Object.assign(sol.shadow.camera, { left: -R, right: R, top: R, bottom: -R, near: 1, far: R * 3.4 }); sol.shadow.camera.updateProjectionMatrix(); sol.color.setHex(L.c); sol.intensity = L.i; hemi.intensity = RL.activo ? L.h * .35 : L.h; sol.shadow.bias = -.0002; sol.shadow.normalBias = Math.max(.04, R * 2 / sol.shadow.mapSize.x * 2.2); renderer.shadowMap.needsUpdate = true; ambienteReal(n in LUCES ? n : "Natural", new THREE.Vector3(...L.d)); return L; }
+  function pasaEnv(grupo, v) { grupo.traverse(o => { if (o.isMesh) [].concat(o.material).forEach(m => { if (m && m.isMeshStandardMaterial) { if (m.userData.real) { const C = CIELOS[R.ambiente] || CIELOS.Natural; m.envMapIntensity = (m.userData.real.tipo === "vidrio" ? 1.3 : 1) * C.env; if (m.userData.luz) m.emissiveIntensity = m.userData.luz; return; } m.envMapIntensity = v; if (m.emissive && m.emissive.getHex()) m.emissiveIntensity = v < .2 ? 2.4 : 1; m.needsUpdate = false; } }); }); }
 
   /* ---------- Cargador universal ---------- */
   const BASE = "https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/";
@@ -426,6 +434,7 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
   const VACIO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
   const FORMATOS = ["glb", "gltf", "fbx", "obj", "dae", "3mf", "3ds", "amf", "ply", "stl", "pcd", "xyz"];
   const IMAGEN = ["png", "jpg", "jpeg", "webp", "bmp", "gif", "tga"];
+/*__REAL__*/
 
   async function recoger(entrada) {
     /* Convierte lo que llega (archivos, carpetas, ZIP) en una tabla nombre → bytes */
@@ -574,6 +583,7 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
       const conv = a => {
         if (!a) return new THREE.MeshStandardMaterial({ color: 0xbbbbbb, side: THREE.DoubleSide });
         let b;
+        if (!escaneo && !vc && (b = materialReal(a))) { env = true; return b; }
         if (escaneo && (a.map || vc)) b = new THREE.MeshBasicMaterial({ map: a.map || null, color: a.map ? 0xffffff : a.color, vertexColors: vc, toneMapped: false, transparent: a.transparent, opacity: a.opacity, alphaTest: a.alphaTest });
         else if (a.isMeshStandardMaterial) { b = a; env = true; }
         else { b = new THREE.MeshStandardMaterial({ map: a.map || null, color: a.color || 0xbbbbbb, normalMap: a.normalMap || null, emissive: a.emissive || 0, emissiveMap: a.emissiveMap || null, roughness: Math.max(.08, Math.min(.92, 1 - Math.sqrt((a.shininess || 30) / 1000))), metalness: /acero|oro|lat[oó]n|cromo|metal/i.test(a.name || "") ? .85 : 0, vertexColors: vc, transparent: a.transparent, opacity: a.opacity === undefined ? 1 : a.opacity, alphaTest: a.alphaTest || 0 }); if (b.transparent) b.depthWrite = false; env = true; }
@@ -585,9 +595,9 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
     return { escaneo, env };
   }
   async function entorno() {
-    if (scene.environment) return;
+    if (R.envSala) { if (!scene.environment) scene.environment = R.envSala; return; }
     await pide("environments/RoomEnvironment.js");
-    const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromScene(new THREE.RoomEnvironment(), .04).texture; pm.dispose();
+    const pm = new THREE.PMREMGenerator(renderer); R.envSala = scene.environment = pm.fromScene(new THREE.RoomEnvironment(), .04).texture; pm.dispose();
   }
   function triangulos(grupo) {
     grupo.updateMatrixWorld(true);
@@ -959,6 +969,7 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
     T.modo = "portada"; T.fly = null; interfaz("portada"); hoja(null); $("portada").classList.remove("fuera"); $("portada").scrollTop = 0; marcoPortada(); $("pista").hidden = true; $("aviso").hidden = true; $("palanca").hidden = true;
   }
   function medir() {
+    PQ.w = 0;
     const w = $("vista").clientWidth, h = $("vista").clientHeight;
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, Aj.calidad)); renderer.setSize(w, h, false);
     camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
@@ -1111,6 +1122,7 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
   function vaciar() {
     raiz.traverse(o => { if (!o.isMesh && !o.isPoints) return; o.geometry.dispose(); (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m && m.dispose()); });
     raiz.clear(); raiz.scale.setScalar(1); raiz.rotation.set(0, 0, 0);
+    ESC.modelo = null; if (escAct === "modelo") escAct = null;
   }
   async function cargar(archivos, ruta) {
     ocupado(true);
@@ -1142,6 +1154,7 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
     orientar(grupo, e);
     T.auto = op.scale || escalar(grupo); grupo.scale.setScalar(T.auto);
     if (op.eye) T.eye = op.eye;
+    await estado("Aplicando materiales"); await registraReal("modelo", grupo, op.rooms); await esperaReal();
     await reconstruir();
     comenzar(op.extra);
     if (T.nubes) aviso("Nube de puntos: no tiene superficies para pisar, así que te mueves libremente. Q y E suben y bajan.");
@@ -1181,6 +1194,7 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
 /*__NUBE__*/
 /*__PORTADA__*/
 /*__PANEL__*/
+/*__INTERFAZ__*/
   /* ---------- Bucle ---------- */
   function andar(dt) {
     let f = 0, s = 0, u = 0; const k = T.teclas;
@@ -1233,8 +1247,9 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
     if (T.muestra) { const wO = $("etiquetas").hidden ? 1 : 0; if (Math.abs(U.uW.value - wO) > .001) { U.uW.value += (wO - U.uW.value) * (1 - Math.exp(-dt * 4)); scene.background.copy(NEGRO).lerp(BLANCO, U.uW.value); } }
     cadaFrame(dt, now);
     if (now - tM > 33) { tM = now; dibujaMapa(); }
-    corte.constant = T.clip;
-    renderer.render(scene, camera);
+    R.abObj = T.modo === "orbita" || (T.fly && T.clip < 50) ? 1 : 0;
+    corte.constant = T.clip; usarReal("modelo"); vigilaRitmo(dt);
+    pintar();
     trasRender();
   }
   medir(); renderer.setAnimationLoop(tick); montaPortada();
@@ -1250,6 +1265,6 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
       await cargar([new File([await q.arrayBuffer()], m.split("/").pop())], m);
     } catch (e) { fallo(motivo(e)); }
   })();
-  if (location.hostname === "localhost") window.__p = { T, get P() { return P; }, get salas() { return salas; }, get planos() { return planos; }, get C() { return C; }, cargar, camera, rayo, andar, sueloEn, H, get D() { return D; }, clicHerr, AGRUPA, medirPunto, exportaPlano, iniciaReto, informe, zipProyecto, modoH, unirTodo, U2, gemini, pf, buscarIA, inventarioIA, reformaIA, puntosIA, Aj, ejecuta2, redecorarIA, geminiImagen, modeloEnPortada, marcoPortada, abrePanel, BOTONES, get nube() { return nube; }, agregaNube, abreProyecto, paquete };
+  if (location.hostname === "localhost") window.__p = { R, PQ, ponNivel, sol, scene, renderer, T, get P() { return P; }, get salas() { return salas; }, get planos() { return planos; }, get C() { return C; }, cargar, camera, rayo, andar, sueloEn, H, get D() { return D; }, clicHerr, AGRUPA, medirPunto, exportaPlano, iniciaReto, informe, zipProyecto, modoH, unirTodo, U2, gemini, pf, buscarIA, inventarioIA, reformaIA, puntosIA, Aj, ejecuta2, redecorarIA, geminiImagen, modeloEnPortada, marcoPortada, abrePanel, BOTONES, get nube() { return nube; }, agregaNube, abreProyecto, paquete };
 })();
 </script>

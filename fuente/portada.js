@@ -65,7 +65,8 @@
     if (Math.abs(portada.scrollTop - (pf.yUlt ?? -1)) > .5) { pf.yUlt = portada.scrollTop; secs.forEach(s => { const x = s.firstElementChild, r = s.getBoundingClientRect(), d = Math.abs(r.top + r.height / 2 - alto / 2) / alto, o = Math.max(0, Math.min(1, 1.5 - d * 2.1)); x.style.opacity = s === secs[0] ? Math.max(.25, o) : o; x.style.transform = `translateY(${(1 - o) * 26}px)`; }); }
     const q = vista.getBoundingClientRect(), vis = Math.max(0, 1 - Math.abs(pf.s - 6) * 2.2), eti = $("etiP"); eti.style.opacity = vis; eti.hidden = vis < .01;
     if (vis >= .01) pf.eti.forEach(e => { v3.set(e.x, pf.base + .3, e.z).project(camera); e.el.style.transform = `translate(-50%,-50%) translate(${(v3.x + 1) / 2 * q.width}px,${(1 - v3.y) / 2 * q.height}px)`; });
-    corte.constant = T.clip; renderer.render(scene, camera);
+    R.abObj = pf.cortar ? 1 : pf.capas ? Math.min(1, Math.max(A.k + (B.k - A.k) * t, A.a + (B.a - A.a) * t, A.x + (B.x - A.x) * t) * 1.4) : (T.clip < 50 ? 1 : 0);
+    corte.constant = T.clip; usarReal("portada"); vigilaRitmo(dt); pintar();
     $("avance").style.transform = `scaleY(${portada.scrollTop / Math.max(1, portada.scrollHeight - alto)})`;
     if (pf.foto) { pf.foto = false; vista.toBlob(b => guardar(b, "portada.png"), "image/png"); }
   }
@@ -88,7 +89,7 @@
     const prio = FORMATOS.find(e => modelos.some(m => m.e === e)); if (!prio) throw new Error("No encuentro un modelo 3D en ese archivo.");
     const m = modelos.find(x => x.e === prio), g = await leeModelo(m, tabla, new Set()), { env } = acabado(g); if (env) await entorno();
     orientar(g, m.e); g.scale.setScalar(escalar(g)); const h = new THREE.Group(); h.add(g);
-    const a = await calcular(triangulos(h)); escaparate.clear(); escaparate.add(h);
+    const a = await calcular(triangulos(h)); escaparate.clear(); escaparate.add(h); await registraReal("portada", h, estancias || []); await esperaReal();
     pf.capas = null; const cub = [], pa = []; h.traverse(o => { if (o.isMesh) { if (/^CUB_/.test(o.name)) cub.push(o); else if (/^PA_/.test(o.name)) pa.push(o); } });
     PARADAS = cub.length && pa.length ? PARADAS_VILLA : paradasDe(a); if (cub.length && pa.length) pf.capas = { cub, pa }; pf.yC = pf.yP = undefined; pf.ambAct = null; pf.caja = new THREE.Box3().setFromObject(h); const [ax, ay, az, bx, by, bz] = a.caja; pf.centro = V((ax + bx) / 2, ay, (az + bz) / 2); pf.base = a.planos[0] ? a.planos[0].floorY : ay; pf.altoCorte = by + 1; pf.propio = true;
     if (estancias && estancias.length) ponEtiquetas2(estancias.filter(e => e.y < 2).filter(e => !/Pasillo|Aseo|Cuarto|Almac|Distribuidor/.test(e.name))); else ponEtiquetas2(a.planos[0] ? a.planos[0].rooms.slice(0, 12).map((r, i) => ({ name: "Estancia " + (i + 1), x: r.x, z: r.z })) : []);

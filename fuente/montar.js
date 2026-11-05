@@ -2,7 +2,10 @@ const fs = require("fs"), path = require("path");
 const f = n => fs.readFileSync(path.join(__dirname, n), "utf8");
 const out = f("web.html")
   .replace("/*__CASA__*/", () => f("casa.js"))
+  .replace("/*__ESTILO__*/", () => f("estilo.css"))
   .replace("/*__ANALISIS__*/", () => f("analisis.js"))
+  .replace("/*__INTERFAZ__*/", () => f("interfaz.js"))
+  .replace("/*__REAL__*/", () => f("realismo.js"))
   .replace("/*__HERR__*/", () => f("herramientas.js"))
   .replace("/*__IA__*/", () => f("ia.js"))
   .replace("/*__NUBE__*/", () => f("nube.js"))

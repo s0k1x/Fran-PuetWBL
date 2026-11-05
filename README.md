@@ -67,6 +67,15 @@ La web ya apunta al proyecto de Supabase. Las claves de `CONFIG` son públicas p
 
 Nunca pongas en el código la clave de Gemini ni la clave `service_role` de Supabase.
 
+## Realismo y diseño
+
+- **Materiales reales:** `fuente/realismo.js` reconoce los materiales por su nombre (`madera_suelo`, `marmol_blanco`, `vidrio`, `agua_piscina`…) y les pone texturas de `texturas/` en metros reales, relieve, brillo, barniz, vidrio con reflejos y agua con refracción y cáusticas.
+- **Cielo y luz:** cielo físico, iluminación HDR de `cielos/` (Poly Haven, CC0), sombras suaves, niebla de horizonte y lámparas que se encienden al atardecer y de noche. Con el techo levantado o en maqueta las sombras interiores desaparecen para verlo todo.
+- **Posproceso:** oclusión ambiental, resplandor, tono fílmico, gradación, viñeta y grano. En Ajustes, *Efectos de luz*: Básica, Alta o Ultra. Si va lento, baja solo.
+- **IA:** además de lo anterior entiende «apaga las luces», «enciéndelas» o «cambia las luces».
+- **Texturas:** `python3 fuente/texturas.py` las regenera (necesita numpy y Pillow).
+- **Diseño:** estilos en `fuente/estilo.css` e interacción en `fuente/interfaz.js`.
+
 ## Probar en tu ordenador
 
 ```bash

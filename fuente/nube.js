@@ -8,14 +8,81 @@
   const cierraFicha = () => $("ficha").hidden = true;
   function fila(...bs) { const f = texto("div", "fila"); bs.forEach(([t, fn]) => { const b = texto("button", "tool"); b.type = "button"; b.textContent = t; b.onclick = fn; f.append(b); }); return f; }
 
+  /* Acceso: ventana propia con entrar, crear cuenta, enlace por correo y recuperar contraseña */
   function cuenta2(tras) {
-    const f = $("ficha"); f.hidden = false;
-    if (usuario) { f.textContent = ""; const h = texto("h3"), p = texto("p"); h.textContent = "Mi cuenta"; p.textContent = usuario.email; f.append(h, p, fila(["Mis proyectos", () => { cierraFicha(); misProyectos(); }], ["Cerrar sesión", async () => { await nube.auth.signOut(); cierraFicha(); aviso("Sesión cerrada."); }], ["Cerrar", cierraFicha])); return; }
-    f.innerHTML = '<h3>Tu cuenta</h3><label class="ajuste">Correo<input id="nCorreo" type="text" inputmode="email" autocomplete="email"></label><label class="ajuste">Contraseña<input id="nClave" type="password" autocomplete="current-password" minlength="8"></label><p id="nMsg"></p>';
-    const msg = t => $("nMsg").textContent = t, datos = () => ({ email: $("nCorreo").value.trim(), password: $("nClave").value });
-    f.append(fila(["Entrar", async () => { const { error } = await nube.auth.signInWithPassword(datos()); if (error) { msg("Correo o contraseña incorrectos, o cuenta sin confirmar."); return; } cierraFicha(); aviso("Sesión iniciada."); if (tras) tras(); }],
-      ["Crear cuenta", async () => { const d = datos(); if (d.password.length < 8) { msg("La contraseña necesita al menos 8 caracteres."); return; } const { data, error } = await nube.auth.signUp({ ...d, options: { emailRedirectTo: location.origin + location.pathname } }); if (error) { msg(/rate|limit/i.test(error.message) ? "Demasiados intentos. Espera unos minutos." : "No se ha podido crear la cuenta."); return; } if (data.session) { cierraFicha(); aviso("Cuenta creada."); if (tras) tras(); } else msg("Revisa tu correo y confirma la cuenta para entrar."); }],
-      ["Cerrar", cierraFicha]));
+    const A = $("acceso"); cierraFicha(); A.hidden = false; A.dataset.modo = "entrar";
+    const cerrar = () => { A.hidden = true; A.textContent = ""; document.removeEventListener("keydown", esc); };
+    const esc = e => { if (e.key === "Escape") cerrar(); };
+    document.addEventListener("keydown", esc);
+    A.onpointerdown = e => { if (e.target === A) cerrar(); };
+    if (usuario) {
+      const ini = (usuario.email || "?")[0].toUpperCase();
+      A.innerHTML = `<div class="tarjeta"><button class="x" type="button" aria-label="Cerrar">${ico("x")}</button>${ico("logo", "i logo")}<h2 id="accTit">Tu <em>cuenta</em></h2>
+        <div class="perfil"><span class="avatar">${ini}</span><div><b>Sesión iniciada</b><span></span></div></div>
+        <div class="lista"><button class="linea" type="button" data-a="pro">${ico("carpeta")}<div>Mis proyectos<small>Abre, comparte o borra lo publicado</small></div></button>
+        <button class="linea" type="button" data-a="pub">${ico("subir")}<div>Publicar este modelo<small>Crea un enlace para compartirlo</small></div></button>
+        <button class="linea" type="button" data-a="sal">${ico("salir")}<div>Cerrar sesión</div></button></div></div>`;
+      A.querySelector(".perfil span span").textContent = usuario.email;
+      A.querySelector(".x").onclick = cerrar;
+      A.querySelector('[data-a="pro"]').onclick = () => { cerrar(); misProyectos(); };
+      A.querySelector('[data-a="pub"]').onclick = () => { cerrar(); if (T.modo === "portada") aviso("Abre un modelo para publicarlo."); else publicar(); };
+      A.querySelector('[data-a="sal"]').onclick = async () => { await nube.auth.signOut(); cerrar(); aviso("Sesión cerrada."); };
+      return;
+    }
+    A.innerHTML = `<div class="tarjeta"><button class="x" type="button" aria-label="Cerrar">${ico("x")}</button>${ico("logo", "i logo")}
+      <h2 id="accTit">Bienvenido a <em>Planta Caminable</em></h2><p class="sub">Guarda tus modelos, publícalos con un enlace y recibe visitas.</p>
+      <div class="pestanas" role="tablist"><b></b><button type="button" role="tab" aria-selected="true" data-m="entrar">Entrar</button><button type="button" role="tab" aria-selected="false" data-m="alta">Crear cuenta</button></div>
+      <form novalidate>
+        <label class="campo"><input id="nCorreo" type="email" inputmode="email" autocomplete="email" placeholder=" " required><span>Correo electrónico</span></label>
+        <label class="campo"><input id="nClave" type="password" autocomplete="current-password" placeholder=" " minlength="8"><span>Contraseña</span><button class="ojo" type="button" aria-label="Mostrar contraseña">${ico("ojo")}</button></label>
+        <div class="fuerza" hidden><i></i><i></i><i></i><i></i></div>
+        <button class="olvido" type="button">¿Has olvidado la contraseña?</button>
+        <button class="principal" type="submit">Entrar</button>
+      </form>
+      <div class="o">o</div>
+      <button class="secundario" type="button" data-a="magia">${ico("correo")}Recibir un enlace para entrar</button>
+      <p class="msg" role="status" id="nMsg"></p>
+      <p class="legal">Tus modelos son privados hasta que decides publicarlos.</p></div>`;
+    const T2 = A.querySelector(".tarjeta"), F = A.querySelector("form"), correo = $("nCorreo"), clave = $("nClave"), boton = A.querySelector(".principal"), fuerza = A.querySelector(".fuerza");
+    const msg = (t, c = "") => { const m = $("nMsg"); m.textContent = t; m.className = "msg " + c; };
+    const mal = (t, campo) => { msg(t, "mal"); if (campo) { campo.closest(".campo").classList.add("mal"); campo.focus(); } T2.classList.remove("tiembla"); void T2.offsetWidth; T2.classList.add("tiembla"); };
+    const ocupa = (on, txt) => { boton.disabled = on; boton.innerHTML = on ? `<span class="gira"></span>${txt}` : txt; };
+    const modo = m => { A.dataset.modo = m; A.querySelectorAll(".pestanas button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.m === m))); const alta = m === "alta"; boton.textContent = alta ? "Crear cuenta" : "Entrar"; clave.autocomplete = alta ? "new-password" : "current-password"; fuerza.hidden = !alta; A.querySelector(".olvido").hidden = alta; msg(""); };
+    A.querySelectorAll(".pestanas button").forEach(b => b.onclick = () => modo(b.dataset.m));
+    A.querySelectorAll("input").forEach(i => i.addEventListener("input", () => i.closest(".campo").classList.remove("mal")));
+    clave.addEventListener("input", () => { const v = clave.value, n = (v.length >= 8) + (/[A-Z]/.test(v) && /[a-z]/.test(v)) + /\d/.test(v) + (/[^\w]/.test(v) || v.length >= 14); fuerza.querySelectorAll("i").forEach((e, k) => e.style.background = k < n ? ["#f08a72", "#e0b26a", "#c9d27a", "#8fd6a8"][n - 1] : ""); });
+    A.querySelector(".ojo").onclick = () => { const v = clave.type === "password"; clave.type = v ? "text" : "password"; };
+    A.querySelector(".x").onclick = cerrar;
+    const correoOk = () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.value.trim());
+    F.onsubmit = async e => {
+      e.preventDefault(); const d = { email: correo.value.trim(), password: clave.value };
+      if (!correoOk()) return mal("Escribe un correo válido.", correo);
+      if (A.dataset.modo === "alta") {
+        if (d.password.length < 8) return mal("La contraseña necesita al menos 8 caracteres.", clave);
+        ocupa(true, "Creando la cuenta");
+        const { data, error } = await nube.auth.signUp({ ...d, options: { emailRedirectTo: location.origin + location.pathname } }); ocupa(false, "Crear cuenta");
+        if (error) return mal(/rate|limit/i.test(error.message) ? "Demasiados intentos. Espera unos minutos." : /registered|exists/i.test(error.message) ? "Ese correo ya tiene cuenta. Entra con él." : "No se ha podido crear la cuenta.");
+        if (data.session) { cerrar(); aviso("Cuenta creada. ¡Bienvenido!"); if (tras) tras(); } else msg("Te hemos enviado un correo. Confírmalo para entrar.", "bien");
+        return;
+      }
+      if (!d.password) return mal("Escribe tu contraseña.", clave);
+      ocupa(true, "Entrando");
+      const { error } = await nube.auth.signInWithPassword(d); ocupa(false, "Entrar");
+      if (error) return mal(/confirm/i.test(error.message) ? "Confirma tu cuenta desde el correo que te enviamos." : "Correo o contraseña incorrectos.", clave);
+      cerrar(); aviso("Sesión iniciada."); if (tras) tras();
+    };
+    A.querySelector(".olvido").onclick = async () => {
+      if (!correoOk()) return mal("Escribe tu correo y te enviaremos un enlace para cambiarla.", correo);
+      const { error } = await nube.auth.resetPasswordForEmail(correo.value.trim(), { redirectTo: location.origin + location.pathname });
+      if (error) mal("No se ha podido enviar el correo. Inténtalo en unos minutos."); else msg("Revisa tu correo para elegir una contraseña nueva.", "bien");
+    };
+    A.querySelector('[data-a="magia"]').onclick = async () => {
+      if (!correoOk()) return mal("Escribe tu correo para enviarte el enlace.", correo);
+      const b = A.querySelector('[data-a="magia"]'); b.disabled = true;
+      const { error } = await nube.auth.signInWithOtp({ email: correo.value.trim(), options: { emailRedirectTo: location.origin + location.pathname } }); b.disabled = false;
+      if (error) mal(/rate|limit/i.test(error.message) ? "Demasiados intentos. Espera unos minutos." : "No se ha podido enviar el enlace."); else msg("Enlace enviado. Ábrelo desde este dispositivo para entrar.", "bien");
+    };
+    setTimeout(() => correo.focus(), 60);
   }
   const datosProyecto = () => ({ v: 1, nombre: T.nombre, datos: D, nombres: [...(cfg.rooms || []), ...(guarda.leer("pc:nombres:" + cfg.name) || [])], scale: T.muestra ? 1 : T.auto * T.scale, eye: T.eye });
   async function paquete() {
