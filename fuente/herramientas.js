@@ -8,7 +8,7 @@
   let D = vacioD();
   const H = { modo: null, a: null, medidas: [], reto: null, sonido: null, rec: null, foto: false, stats: {}, calor: new Map(), verCalor: false, fuentes: null };
   const claveD = () => "pc:datos:" + (cfg.name || "");
-  const guardaD = () => guarda.poner(claveD(), D);
+  const guardaD = () => { guarda.poner(claveD(), D); nubeGuarda(); };
   const texto = (t, c) => { const e = document.createElement(t); if (c) e.className = c; return e; };
   const lector = sel => new Promise(ok => { const i = document.createElement("input"); i.type = "file"; i.accept = sel; i.onchange = () => ok(i.files[0] || null); i.click(); });
   async function guardar(blob, nombre) {
@@ -253,6 +253,7 @@
     return true;
   }
   function contacto() {
+    if (nube && H.proyecto) { contactoNube(); return; }
     const f = $("ficha"); f.hidden = false;
     if (enClaude) {
       f.innerHTML = '<h3>Pedir visita</h3><label class="ajuste">Nombre<input id="cN" type="text" maxlength="80" autocomplete="name"></label><label class="ajuste">Correo o teléfono<input id="cC" type="text" maxlength="120"></label><label class="ajuste">Mensaje<textarea id="cM" rows="3" maxlength="600"></textarea></label><div class="fila"><button id="cE" class="tool" type="button">Enviar</button><button id="cX" class="tool" type="button">Cerrar</button></div>';
@@ -338,13 +339,14 @@
     add("Jugar", "Sonido", "Pasos y tono de sala", alternaSonido, "6");
     if (enClaude) add("Jugar", "Sala multijugador", "Camina con otras personas", alternaSala);
     if (xrOK) add("Jugar", "Gafas de realidad virtual", "Entra con tu visor", entrarVR);
+    agregaIA(add); agregaNube(add);
     if (salas.length) add("Datos", "Estadísticas", "Tiempo por estancia y mapa de calor", informe);
-    if (enClaude || CONFIG.contacto) add("Datos", "Pedir visita", "Contacto con quien publica el modelo", contacto);
+    if (enClaude || CONFIG.contacto || (nube && H.proyecto)) add("Datos", "Pedir visita", "Contacto con quien publica el modelo", contacto);
     if (enClaude) add("Datos", "Ver solicitudes", "Mensajes recibidos", solicitudes);
     if (!m) {
       if (enClaude) add("Archivo", "Compartir enlace", "Publica este modelo para quien tenga acceso", compartir);
       else if (H.ruta) add("Archivo", "Copiar enlace", "Enlace directo a este modelo", () => copia(location.href, "Enlace copiado."));
-      add("Archivo", "Guardar proyecto", "ZIP con modelo, puntos y muebles", exportaProyecto);
+      if (H.fuentes) add("Archivo", "Guardar proyecto", "ZIP con modelo, puntos y muebles", exportaProyecto);
       add("Archivo", "Exportar GLB", "Convierte a GLB con texturas de 2048 px", exportaGLB);
     }
     add("Archivo", "Ajustes", "Brillo, altura, tamaño y paso libre", () => hoja("ajustes"));
@@ -380,7 +382,7 @@
   $("verH").addEventListener("click", () => $("catalogo").hidden = false);
   $("cierraCat").addEventListener("click", () => $("catalogo").hidden = true);
   document.addEventListener("keydown", e => {
-    if (T.modo === "portada" || /^(text|textarea|search)$/.test(e.target.type) || !$("paleta").hidden) return;
+    if (T.modo === "portada" || /^(text|textarea|search|password)$/.test(e.target.type) || !$("paleta").hidden) return;
     const c = e.code;
     if (c === "Slash" || c === "KeyK" || c === "Tab") { e.preventDefault(); abrePaleta(); return; }
     if (c === "Escape") { if (H.modo) modoH(null); $("app").classList.remove("limpio"); return; }
@@ -401,13 +403,14 @@
     return true;
   }
   function prepararHerramientas(extra) {
-    finReto(); borraMedidas(); capaGente.clear(); gente.clear(); H.stats = {}; H.calor = new Map(); H.verCalor = false; T.corte = undefined; $("ficha").hidden = true; modoH(null);
+    H.proyecto = null; finReto(); borraMedidas(); capaGente.clear(); gente.clear(); H.stats = {}; H.calor = new Map(); H.verCalor = false; T.corte = undefined; $("ficha").hidden = true; modoH(null);
     D = Object.assign(vacioD(), (extra && extra.datos) || guarda.leer(claveD()) || {});
     pintaPuntos(); pintaMuebles(); aplicaAcabados(); aplicaAmb();
   }
   const v9 = new THREE.Vector3(), v8 = new THREE.Vector3(); let tOc = 0, tapado = [], tCal = 0;
   function cadaFrame(dt, now) {
     if (xrSes) pasoVR(dt);
+    frameNube(dt, now);
     const q = vista.getBoundingClientRect(), limpio = $("app").classList.contains("limpio");
     const pon = (e, p, vis) => { v9.copy(p).project(camera); const fuera = v9.z > 1 || !vis; e.hidden = fuera; if (!fuera) e.style.transform = `translate(-50%,-50%) translate(${(v9.x + 1) / 2 * q.width}px,${(1 - v9.y) / 2 * q.height}px)`; };
     if (now - tOc > 180) { tOc = now; const c = camera.position; tapado = D.puntos.map(p => { const dx = p.x - c.x, dy = p.y - c.y, dz = p.z - c.z, l = Math.hypot(dx, dy, dz) || 1; return rayo(c.x, c.y, c.z, dx / l, dy / l, dz / l, l - .08) < Infinity; }); }

@@ -29,6 +29,33 @@ GLB, GLTF, OBJ con MTL, FBX, DAE, PLY, STL, 3DS, 3MF, AMF, PCD, XYZ y ZIP con cu
 W A S D para andar, Mayús para correr, clic para mirar con el ratón y Esc para soltarlo.
 K o / abre el menú de herramientas. M abre la maqueta, P el plano y F atraviesa paredes.
 
+## Unir varios escaneos con Gemini
+
+En la portada, pulsa **Unir varios escaneos**.
+
+1. Añade los escaneos. Usa un ZIP por escaneo si varios comparten nombres de textura, como pasa en Polycam.
+2. Añade el plano de la casa en imagen o PDF.
+3. Si conoces la anchura real del plano, escríbela: mejora la precisión.
+4. Pega tu clave de Gemini, opcional. Se consigue en aistudio.google.com y se guarda solo en tu navegador.
+5. Revisa las piezas sobre el plano, corrígelas arrastrando si hace falta y pulsa **Entrar**.
+
+Con plano, los escaneos no necesitan solaparse. Sin plano deben solaparse y el resultado necesita revisión a mano.
+
+Gemini lee el plano, nombra estancias, responde preguntas, hace inventario, propone mejoras, revisa el estado, busca objetos, crea puntos de información y escribe anuncios. Cada persona usa su propia clave. **No escribas nunca una clave en el código:** en un repositorio público quedaría expuesta.
+
+Con Supabase usa `gemini-3.8-flash` y, si está saturado, pasa a `gemini-3.5-flash-lite` y `gemini-2.5-flash`. Con clave propia, el modelo se cambia en Herramientas, Conectar Gemini.
+
+## Supabase
+
+La web ya apunta al proyecto de Supabase. Las claves de `CONFIG` son públicas por diseño: la seguridad la ponen las reglas de la base de datos.
+
+- **Gemini para visitantes:** guarda tu clave como `GEMINI_API_KEY` en Edge Functions, Secrets. Cada dirección IP tiene 40 usos al día y la web 500.
+- **Otro dominio:** la función solo acepta `*.github.io` y `localhost`. Para otro dominio, añade el secreto `ORIGENES`.
+- **Cuentas:** en Authentication, URL Configuration, pon la dirección de tu GitHub Pages como Site URL.
+- **Publicar:** los proyectos publicados son visibles para quien tenga el enlace. Máximo 50 MB por modelo.
+
+Nunca pongas en el código la clave de Gemini ni la clave `service_role` de Supabase.
+
 ## Probar en tu ordenador
 
 ```bash

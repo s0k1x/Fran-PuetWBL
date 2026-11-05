@@ -4,6 +4,10 @@ const out = f("web.html")
   .replace("/*__CASA__*/", () => f("casa.js"))
   .replace("/*__ANALISIS__*/", () => f("analisis.js"))
   .replace("/*__HERR__*/", () => f("herramientas.js"))
+  .replace("/*__IA__*/", () => f("ia.js"))
+  .replace("/*__NUBE__*/", () => f("nube.js"))
+  .replace("/*__PORTADA__*/", () => f("portada.js"))
+  .replace("/*__UNION__*/", () => f("union.js"))
   .replace("/*__LUZ__*/", () => "const LUZ = " + f("luz.json") + ";");
 const raiz = path.join(__dirname, "..");
 fs.writeFileSync(path.join(raiz, "planta-caminable.html"), out);
