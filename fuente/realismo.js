@@ -335,7 +335,7 @@
       c += (texture2D(tA, vUv + uPx).rgb + texture2D(tA, vUv - uPx).rgb + texture2D(tA, vUv + vec2(uPx.x, -uPx.y)).rgb + texture2D(tA, vUv - vec2(uPx.x, -uPx.y)).rgb) * 2.;
       gl_FragColor = vec4(c / 12. + texture2D(tB, vUv).rgb * uMez, 1.); }`;
   const FS_FINAL = `
-    varying vec2 vUv; uniform sampler2D tHDR, tAO, tBloom; uniform float uExp, uAO, uBloom, uT, uGrano, uVin, uSat, uCon, uNit; uniform vec2 uRes, uPx; uniform bool uConAO, uConBloom;
+    varying vec2 vUv; uniform sampler2D tHDR, tAO, tBloom, tProf; uniform float uExp, uAO, uBloom, uT, uGrano, uVin, uSat, uCon, uNit, uDof, uFoco, uFundido; uniform vec2 uRes, uPx, uCam; uniform bool uConAO, uConBloom;
     vec3 RRTAndODTFit(vec3 v) { vec3 a = v * (v + .0245786) - .000090537; vec3 b = v * (.983729 * v + .4329510) + .238081; return a / b; }
     vec3 aces(vec3 c) {
       const mat3 I = mat3(vec3(.59719, .07600, .02840), vec3(.35458, .90834, .13383), vec3(.04823, .01566, .83777));
@@ -345,6 +345,12 @@
     vec3 srgb(vec3 c) { return mix(c * 12.92, pow(c, vec3(.41666)) * 1.055 - .055, step(.0031308, c)); }
     void main() {
       vec3 c = texture2D(tHDR, vUv).rgb; if (c.r != c.r || c.g != c.g || c.b != c.b) c = vec3(0.);
+      /* Profundidad de campo del modo foto: desenfoca según la distancia al punto enfocado */
+      if (uDof > 0.) {
+        float d = texture2D(tProf, vUv).x, z = uCam.x * uCam.y / (uCam.y - d * (uCam.y - uCam.x));
+        float coc = clamp(abs(z - uFoco) / max(uFoco, .8) * 1.4, 0., 1.) * uDof;
+        if (coc > .02) { vec3 s = c; for (int i = 0; i < 20; i++) { float a = float(i) * 2.39996, r = sqrt((float(i) + .5) / 20.); s += texture2D(tHDR, vUv + vec2(cos(a), sin(a)) * r * coc * uPx * 16.).rgb; } c = s / 21.; }
+      }
       /* Nitidez: realce suave de bordes sobre la imagen ya en tono final */
       vec3 vec = texture2D(tHDR, vUv + vec2(uPx.x, 0.)).rgb + texture2D(tHDR, vUv - vec2(uPx.x, 0.)).rgb + texture2D(tHDR, vUv + vec2(0., uPx.y)).rgb + texture2D(tHDR, vUv - vec2(0., uPx.y)).rgb;
       float ao = uConAO ? mix(1., texture2D(tAO, vUv).r, uAO) : 1.;
@@ -358,6 +364,7 @@
       vec2 q = vUv - .5; c *= 1. - dot(q, q) * uVin;
       float g = fract(sin(dot(gl_FragCoord.xy + fract(uT) * 91.7, vec2(12.9898, 78.233))) * 43758.5453);
       c += (g - .5) * uGrano;
+      c *= 1. - uFundido;
       gl_FragColor = vec4(clamp(c, 0., 1.), 1.);
     }`;
   function rt(w, h, op = {}) { return new THREE.WebGLRenderTarget(Math.max(1, w), Math.max(1, h), Object.assign({ type: PQ.tipo, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false, generateMipmaps: false }, op)); }
@@ -372,7 +379,7 @@
     PQ.mBri = shQ(FS_BRILLO, { tA: { value: null }, uUmbral: { value: 1.1 }, uPx: { value: new THREE.Vector2() } });
     PQ.mBaja = shQ(FS_BAJA, { tA: { value: null }, uPx: { value: new THREE.Vector2() } });
     PQ.mSube = shQ(FS_SUBE, { tA: { value: null }, tB: { value: null }, uPx: { value: new THREE.Vector2() }, uMez: { value: 1 } });
-    PQ.mFin = shQ(FS_FINAL, { tHDR: { value: null }, tAO: { value: null }, tBloom: { value: null }, uExp: { value: 1 }, uAO: { value: .85 }, uBloom: { value: .12 }, uT: { value: 0 }, uGrano: { value: .018 }, uVin: { value: .55 }, uSat: { value: 1.08 }, uCon: { value: 1.07 }, uRes: { value: new THREE.Vector2() }, uConAO: { value: true }, uConBloom: { value: true }, uNit: { value: .3 }, uPx: { value: new THREE.Vector2() } });
+    PQ.mFin = shQ(FS_FINAL, { tHDR: { value: null }, tAO: { value: null }, tBloom: { value: null }, uExp: { value: 1 }, uAO: { value: .85 }, uBloom: { value: .12 }, uT: { value: 0 }, uGrano: { value: .018 }, uVin: { value: .55 }, uSat: { value: 1.08 }, uCon: { value: 1.07 }, uRes: { value: new THREE.Vector2() }, uConAO: { value: true }, uConBloom: { value: true }, uNit: { value: .3 }, uPx: { value: new THREE.Vector2() }, tProf: { value: null }, uDof: { value: 0 }, uFoco: { value: 5 }, uFundido: { value: 0 }, uCam: { value: new THREE.Vector2(.05, 1500) } });
     PQ.mNor = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide });
     PQ.mLum = shQ(`varying vec2 vUv; uniform sampler2D tA; void main(){ float s = 0.; for (int i = 0; i < 8; i++) for (int j = 0; j < 8; j++) { vec3 c = texture2D(tA, (vec2(float(i), float(j)) + .5) / 8.).rgb; s += log2(max(dot(c, vec3(.2126, .7152, .0722)), 1e-4)); } gl_FragColor = vec4(vec3(clamp((s / 64. + 10.) / 14., 0., 1.)), 1.); }`, { tA: { value: null } });
     PQ.lum = new THREE.WebGLRenderTarget(1, 1, { type: THREE.UnsignedByteType, depthBuffer: false }); PQ.buf = new Uint8Array(4); PQ.cuenta = 0;
@@ -382,7 +389,7 @@
     const v = renderer.getDrawingBufferSize(new THREE.Vector2()), w = v.x, h = v.y; if (w === PQ.w && h === PQ.h && PQ.hdr) return; PQ.w = w; PQ.h = h;
     ["hdr", "pre", "ao1", "ao2"].forEach(k => PQ[k] && PQ[k].dispose()); (PQ.bl || []).forEach(x => { x.a.dispose(); x.b.dispose(); });
     /* Profundidad de 24 bits: con 16 las superficies cercanas se pelean a distancia y salen rayas */
-    PQ.hdr = rt(w, h, { depthBuffer: true, samples: 4, depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType) });
+    PQ.hdr = rt(w, h, { depthBuffer: true, samples: R.capturando ? 0 : 4, depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType) }); PQ.hdr.ignoreDepthForMultisampleCopy = false;
     const hw = w >> 1, hh = h >> 1;
     PQ.pre = rt(hw, hh, { type: THREE.UnsignedByteType, depthBuffer: true, depthTexture: new THREE.DepthTexture(hw, hh, THREE.UnsignedIntType), minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
     PQ.ao1 = rt(hw, hh, { type: THREE.UnsignedByteType }); PQ.ao2 = rt(hw, hh, { type: THREE.UnsignedByteType });
@@ -405,8 +412,12 @@
     const p = camera.position, i = Math.floor((p.x - b.x) * b.z * m.S), j = Math.floor((p.z - b.y) * b.w * m.S); if (i < 0 || j < 0 || i >= m.S || j >= m.S || p.y > U_R.uNiv.value.y) return 0;
     const k = (j * m.S + i) * 4; return (p.y < U_R.uNiv.value.x + 1.6 ? m.d[k] : m.d[k + 1]) / 255;
   }
+  /* Ganchos de otros módulos (vídeo promocional, visita en directo…) antes de cada imagen */
+  R.antes = []; R.ultT = performance.now();
   function pintar() {
-    R.t += 1 / 60; U_R.uT.value = performance.now() / 1000; casaAbierta();
+    const ahora = performance.now(), dtP = Math.min(.05, (ahora - R.ultT) / 1000); R.ultT = ahora; R.antes.forEach(f => f(dtP, ahora));
+    R.t += 1 / 60; U_R.uT.value = ahora / 1000; casaAbierta();
+    if (R.comparar && R.activo) { pintaComparado(); return; }
     /* Plano cercano según el modo: de lejos, más precisión de profundidad */
     const cerca = T.modo === "portada" ? .35 : T.modo === "orbita" || T.modo === "vuelo" ? .15 : .05;
     if (camera.near !== cerca) { camera.near = cerca; camera.far = 1500; camera.updateProjectionMatrix(); }
@@ -439,8 +450,19 @@
     /* Exposición automática: como una cámara, mide la luz media cada pocos fotogramas */
     if (++PQ.cuenta % 12 === 0) { const l = PQ.mLum.uniforms; l.tA.value = PQ.hdr.texture; paso(PQ.mLum, PQ.lum); renderer.readRenderTargetPixels(PQ.lum, 0, 0, 1, 1, PQ.buf); const lm = Math.pow(2, PQ.buf[0] / 255 * 14 - 10); R.expMed = Math.max(.75, Math.min(1.9, Math.pow(.2 / Math.max(lm, 1e-4), .55))); }
     const f = PQ.mFin.uniforms; f.tHDR.value = PQ.hdr.texture; f.uPx.value.set(1 / PQ.w, 1 / PQ.h); f.uNit.value = tactil ? .38 : .28; f.tAO.value = PQ.ao1.texture; f.tBloom.value = bl[0].b.texture; f.uConAO.value = ao; f.uConBloom.value = true;
+    f.tProf.value = PQ.hdr.depthTexture; f.uDof.value = R.dof || 0; f.uFoco.value = R.foco || 5; f.uFundido.value = R.fundido || 0; f.uCam.value.set(camera.near, camera.far);
     f.uExp.value = renderer.toneMappingExposure * R.exp * R.expAuto; f.uT.value = R.t; f.uBloom.value = .06 + U_R.uNoche.value * .025;
     paso(PQ.mFin, null);
+  }
+  /* Comparar dos estilos: mitad izquierda con uno y derecha con otro, separados por una línea movible */
+  function pintaComparado() {
+    const c = R.comparar, v = renderer.getSize(new THREE.Vector2()), x = Math.round(v.x * c.corte);
+    if (renderer.toneMapping !== THREE.ACESFilmicToneMapping) renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    const e = renderer.toneMappingExposure; renderer.toneMappingExposure = e * R.exp * R.expAuto;
+    renderer.setRenderTarget(null); renderer.setScissorTest(true);
+    aplicaEstilo(c.a, true); renderer.setScissor(0, 0, x, v.y); renderer.setViewport(0, 0, v.x, v.y); renderer.render(scene, camera);
+    aplicaEstilo(c.b, true); renderer.setScissor(x, 0, v.x - x, v.y); renderer.render(scene, camera);
+    renderer.setScissorTest(false); renderer.toneMappingExposure = e;
   }
   /* Calidad: elige al empezar y baja sola si la imagen va a tirones */
   function nivelInicial() {
