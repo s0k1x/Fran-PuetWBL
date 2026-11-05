@@ -1,0 +1,1015 @@
+<title>Planta Caminable</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@400&display=swap">
+<style>
+/* Layout: negro absoluto. Una frase, una acción y una trama de puntos que recuerda a una nube de escaneo. Una sola apariencia, oscura, por decisión. */
+:root {
+  color-scheme: dark;
+  --negro: #000;
+  --sup: rgba(16, 16, 16, .78);
+  --texto: #ecece8;
+  --gris: #85857f;
+  --linea: rgba(255, 255, 255, .14);
+  --hover: rgba(255, 255, 255, .08);
+  --error: #e0806c;
+  --sans: "Geist", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Geist Mono", ui-monospace, Consolas, monospace;
+  --gx: max(28px, env(safe-area-inset-left, 0px));
+  --gr: max(28px, env(safe-area-inset-right, 0px));
+  --gt: calc(24px + env(safe-area-inset-top, 0px));
+  --gb: calc(24px + env(safe-area-inset-bottom, 0px));
+  --curva: cubic-bezier(.2, .7, .2, 1);
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: var(--negro); color: var(--texto); font-family: var(--sans); font-size: 14px; -webkit-font-smoothing: antialiased; }
+#app { position: fixed; inset: 0; overflow: hidden; background: var(--negro); }
+#vista { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; cursor: grab; opacity: 0; transition: opacity 1s var(--curva); }
+#app.dentro #vista { opacity: 1; }
+#vista.arrastra { cursor: grabbing; }
+button, input { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; }
+:focus-visible { outline: 1px solid var(--texto); outline-offset: 3px; }
+.dato { font-family: var(--mono); font-size: 11px; color: var(--gris); font-variant-numeric: tabular-nums; }
+
+/* Portada */
+#portada { position: absolute; inset: 0; transition: opacity .9s var(--curva); }
+#portada.fuera { opacity: 0; pointer-events: none; }
+#puntos { position: absolute; inset: 0; width: 100%; height: 100%; }
+#marca { position: absolute; left: var(--gx); top: var(--gt); font-size: 13px; color: var(--texto); letter-spacing: .01em; }
+#formatos { position: absolute; right: var(--gr); top: var(--gt); text-align: right; max-width: 46%; line-height: 1.7; }
+#centro { position: absolute; left: var(--gx); bottom: calc(var(--gb) + 8px); right: var(--gr); display: grid; gap: 30px; justify-items: start; }
+#centro h1 { margin: 0; font-weight: 300; font-size: clamp(38px, 6.2vw, 84px); line-height: 1.02; letter-spacing: -.04em; text-wrap: balance; max-width: 13em; }
+#acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; width: 100%; }
+#cargar { display: inline-flex; align-items: center; min-height: 46px; padding: 0 26px; border: 1px solid var(--texto); border-radius: 999px; font-size: 14px; cursor: pointer; transition: background .3s, color .3s; }
+#cargar:hover, #cargar:focus-within { background: var(--texto); color: #000; }
+#muestra { color: var(--gris); font-size: 13px; transition: color .2s; }
+#muestra:hover { color: var(--texto); }
+#progreso { width: min(420px, 100%); display: grid; gap: 10px; }
+#barra { height: 1px; background: var(--linea); overflow: hidden; position: relative; }
+#barra i { position: absolute; inset: 0; width: 34%; background: var(--texto); animation: desliza 1.5s var(--curva) infinite; }
+@keyframes desliza { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+#error { color: var(--error); font-size: 13px; line-height: 1.5; max-width: 60ch; margin: 0; }
+
+/* Recorrido */
+#esq { position: absolute; left: var(--gx); top: var(--gt); font-size: 13px; color: #fff; text-shadow: 0 1px 10px rgba(0, 0, 0, .7); transition: opacity .2s; z-index: 2; }
+#esq:hover { opacity: .65; }
+#dock { position: absolute; left: 50%; bottom: var(--gb); transform: translateX(-50%); display: flex; align-items: center; background: var(--sup); border: 1px solid var(--linea); border-radius: 14px; padding: 4px; max-width: calc(100% - var(--gx) - var(--gr)); box-sizing: border-box; backdrop-filter: blur(18px); z-index: 2; }
+#dock > div { display: flex; align-items: center; }
+.tool { padding: 9px 12px; border-radius: 10px; font-size: 13px; white-space: nowrap; color: var(--texto); transition: background .15s; }
+.tool:hover { background: var(--hover); }
+.tool[aria-pressed="true"] { background: var(--texto); color: #000; }
+.flecha { width: 34px; height: 36px; border-radius: 10px; font-size: 15px; }
+.flecha:hover { background: var(--hover); }
+#salaBtn { display: grid; justify-items: start; padding: 3px 12px; border-radius: 10px; min-width: 120px; text-align: left; }
+#salaBtn:hover { background: var(--hover); }
+#nombre { font-size: 13px; line-height: 1.3; }
+.sep { width: 1px; height: 20px; background: var(--linea); margin: 0 6px; }
+#hoja { position: absolute; left: 50%; bottom: calc(var(--gb) + 58px); transform: translateX(-50%); width: min(320px, calc(100% - var(--gx) - var(--gr))); max-height: calc(100% - 170px); overflow: auto; box-sizing: border-box; background: var(--sup); border: 1px solid var(--linea); border-radius: 14px; padding: 6px; display: grid; gap: 6px; backdrop-filter: blur(18px); z-index: 2; }
+#lista { list-style: none; margin: 0; padding: 0; }
+#lista button { width: 100%; display: flex; justify-content: space-between; gap: 12px; padding: 9px 10px; border-radius: 9px; text-align: left; font-size: 13px; }
+#lista button:hover { background: var(--hover); }
+#lista .actual { font-weight: 500; }
+.ajuste { display: grid; gap: 6px; padding: 8px 10px; font-size: 13px; }
+.ajuste > span { display: flex; justify-content: space-between; align-items: baseline; }
+.ajuste input[type="range"] { width: 100%; accent-color: var(--texto); }
+.ajuste input[type="text"] { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--linea); border-radius: 8px; background: transparent; }
+.fila { display: flex; flex-wrap: wrap; gap: 2px; }
+#mini { position: absolute; right: var(--gr); top: var(--gt); width: 168px; height: 168px; background: var(--sup); border: 1px solid var(--linea); box-sizing: border-box; border-radius: 12px; overflow: hidden; backdrop-filter: blur(18px); transition: width .4s var(--curva), height .4s var(--curva), right .4s var(--curva); z-index: 1; }
+#mini.grande { width: min(70vh, calc(100% - var(--gx) - var(--gr))); height: min(70vh, calc(100% - 150px)); right: max(var(--gr), calc(50% - 35vh)); z-index: 3; }
+#mapa { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; touch-action: none; }
+#etiquetas { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+#etiquetas button { position: absolute; left: 0; top: 0; pointer-events: auto; padding: 5px 10px; border-radius: 999px; background: var(--sup); border: 1px solid var(--linea); font-size: 12px; white-space: nowrap; will-change: transform; }
+#etiquetas button:hover { background: var(--texto); color: #000; }
+#pista { position: absolute; left: 50%; top: calc(var(--gt) + 2px); transform: translateX(-50%); padding: 7px 12px; border-radius: 999px; background: var(--sup); color: var(--texto); font-size: 12px; white-space: nowrap; pointer-events: none; transition: opacity .8s; z-index: 2; }
+#aviso { position: absolute; left: 50%; top: calc(var(--gt) + 42px); transform: translateX(-50%); max-width: min(440px, calc(100% - var(--gx) - var(--gr))); width: max-content; box-sizing: border-box; padding: 9px 13px; border-radius: 10px; background: var(--sup); border: 1px solid var(--linea); font-size: 13px; line-height: 1.4; backdrop-filter: blur(18px); z-index: 5; }
+#velo { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .16s linear; z-index: 1; }
+#palanca { position: absolute; left: calc(var(--gx) + 2px); bottom: calc(var(--gb) + 70px); width: 104px; height: 104px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .5); background: rgba(0, 0, 0, .18); pointer-events: none; z-index: 1; }
+#palanca i { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px; border-radius: 50%; background: rgba(255, 255, 255, .78); }
+#etiPlanta { position: absolute; left: var(--gx); top: calc(var(--gt) + 26px); color: #fff; font-size: 12px; text-shadow: 0 1px 10px rgba(0, 0, 0, .7); z-index: 2; }
+#suelta { position: absolute; inset: 14px; border: 1px solid var(--texto); border-radius: 16px; background: rgba(0, 0, 0, .7); display: grid; place-items: center; font-weight: 300; font-size: 26px; letter-spacing: -.02em; pointer-events: none; z-index: 7; }
+@media (max-width: 760px) {
+  :root { --gx: max(18px, env(safe-area-inset-left, 0px)); --gr: max(18px, env(safe-area-inset-right, 0px)); }
+  #formatos { max-width: 58%; font-size: 10px; }
+  #dock { width: calc(100% - var(--gx) - var(--gr)); justify-content: space-between; flex-wrap: wrap; }
+  #dock > div { justify-content: space-between; width: 100%; }
+  #dock .sep { display: none; }
+  #salaBtn { flex: 1; justify-items: center; text-align: center; }
+  #herr { justify-content: space-around; border-top: 1px solid var(--linea); padding-top: 3px; margin-top: 3px; }
+  #hoja { bottom: calc(var(--gb) + 104px); }
+  #mini { width: 104px; height: 104px; }
+  #mini.grande { width: calc(100% - var(--gx) - var(--gr)); height: min(60vh, calc(100% - 190px)); right: var(--gr); }
+  #palanca { bottom: calc(var(--gb) + 112px); }
+  #pista { top: auto; bottom: calc(var(--gb) + 112px); left: auto; right: var(--gr); transform: none; white-space: normal; max-width: 48%; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div id="app">
+  <canvas id="vista" tabindex="0" aria-label="Vista 3D. Usa W, A, S y D para caminar y arrastra para mirar."></canvas>
+  <div id="etiquetas" hidden></div>
+  <div id="velo"></div>
+
+  <section id="portada">
+    <canvas id="puntos" aria-hidden="true"></canvas>
+    <span id="marca">Planta Caminable</span>
+    <div id="formatos" class="dato">GLB · GLTF · OBJ · FBX · DAE · PLY · STL · 3DS · 3MF · AMF · PCD · XYZ · ZIP</div>
+    <div id="centro">
+      <h1>Camina por tu escaneo.</h1>
+      <p id="error" hidden></p>
+      <div id="acciones">
+        <label id="cargar" for="archivo">Cargar escaneo</label>
+        <button id="muestra" type="button">Ver casa de muestra</button>
+      </div>
+      <div id="progreso" hidden>
+        <div id="barra"><i></i></div>
+        <span id="estado" class="dato">Leyendo archivo</span>
+      </div>
+    </div>
+  </section>
+
+  <button id="esq" type="button" hidden>Planta Caminable</button>
+  <span id="etiPlanta" hidden></span>
+  <div id="mini" hidden><canvas id="mapa" aria-label="Plano. Pulsa un punto para saltar hasta él."></canvas></div>
+  <div id="pista" hidden></div>
+  <div id="palanca" hidden><i id="pomo"></i></div>
+  <div id="hoja" hidden></div>
+  <nav id="dock" hidden aria-label="Recorrido">
+    <div id="navSala">
+      <button id="ant" class="flecha" type="button" aria-label="Estancia anterior">←</button>
+      <button id="salaBtn" type="button"><span id="nombre">—</span><span id="datos" class="dato"></span></button>
+      <button id="sig" class="flecha" type="button" aria-label="Estancia siguiente">→</button>
+    </div>
+    <span class="sep"></span>
+    <div id="herr">
+      <button id="bPla" class="tool" type="button" aria-pressed="false">Plano</button>
+      <button id="bMaq" class="tool" type="button" aria-pressed="false">Maqueta</button>
+      <button id="bAju" class="tool" type="button" aria-pressed="false">Ajustes</button>
+    </div>
+  </nav>
+  <div id="aviso" role="status" hidden></div>
+  <div id="suelta" hidden>Suelta para cargar</div>
+  <input id="archivo" type="file" multiple hidden>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script>
+/* Para dejar un escaneo fijo en la web: publica el archivo junto a la página y rellena esto. */
+const CONFIG = { modelUrl: null, modelName: "escaneo", scale: 0, tilt: 0, eye: 1.6, rooms: [], spawn: null };
+/*__CASA__*/
+/*__LUZ__*/
+/*__ANALISIS__*/
+(function main() {
+  const $ = id => document.getElementById(id);
+  const fmt = (v, d = 2) => v.toLocaleString("es-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const calmo = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const tactil = matchMedia("(pointer: coarse)").matches;
+  const guarda = {
+    leer(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    poner(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+  let avisoT = 0;
+  function aviso(txt) { const el = $("aviso"); el.textContent = txt; el.hidden = false; clearTimeout(avisoT); avisoT = setTimeout(() => el.hidden = true, 5200); }
+  const estado = t => { $("estado").textContent = t; return new Promise(r => setTimeout(r, 30)); };
+  function ocupado(on) { $("progreso").hidden = !on; $("acciones").hidden = on; if (on) $("error").hidden = true; }
+  function fallo(t) { ocupado(false); $("error").textContent = t; $("error").hidden = false; irPortada(); }
+
+  /* ---------- Portada: trama de puntos ---------- */
+  const fondo = (() => {
+    const c = $("puntos"), g = c.getContext("2d"); let W = 0, H = 0, dpr = 1, mx = -1e4, my = -1e4, vivo = true, ultimo = 0;
+    const medir = () => { dpr = Math.min(devicePixelRatio || 1, 2); W = c.clientWidth; H = c.clientHeight; c.width = W * dpr; c.height = H * dpr; };
+    addEventListener("resize", medir); medir();
+    addEventListener("pointermove", e => { mx = e.clientX; my = e.clientY; });
+    function dibuja(t) {
+      if (!vivo) return;
+      if (!calmo) requestAnimationFrame(dibuja);
+      if (t - ultimo < 30 && !calmo) return; ultimo = t;
+      g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H); g.fillStyle = "#fff";
+      const s = 26, barrido = (t * .00006 % 1.4 - .2) * H;
+      for (let y = s / 2; y < H; y += s) for (let x = s / 2; x < W; x += s) {
+        const d = Math.hypot(x - mx, y - my), a = Math.max(0, 1 - d / 200), b = Math.max(0, 1 - Math.abs(y - barrido) / 90);
+        g.globalAlpha = .07 + a * a * .5 + b * b * .1;
+        g.fillRect(x, y, 1, 1);
+      }
+      g.globalAlpha = 1;
+    }
+    requestAnimationFrame(dibuja);
+    return { parar() { vivo = false; }, seguir() { if (!vivo) { vivo = true; requestAnimationFrame(dibuja); } } };
+  })();
+
+  if (!window.THREE) { $("error").textContent = "No se ha podido cargar el motor 3D. Revisa la conexión y recarga la página."; $("error").hidden = false; $("acciones").hidden = true; return; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas: $("vista"), antialias: true, powerPreference: "high-performance" }); }
+  catch (e) { $("error").textContent = "Este navegador no tiene WebGL activado, y hace falta para ver modelos 3D."; $("error").hidden = false; $("acciones").hidden = true; return; }
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  const EXPO_CASA = 1.05, U = { uW: { value: 0 } };
+  const corte = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1000);
+  renderer.clippingPlanes = [corte];
+  const scene = new THREE.Scene(), NEGRO = new THREE.Color(0x000000), BLANCO = new THREE.Color(0xffffff), FONDO = new THREE.Color(0x0b0b0b);
+  scene.background = new THREE.Color(0x000000);
+  const camera = new THREE.PerspectiveCamera(72, 1, .03, 1200); camera.rotation.order = "YXZ";
+  const raiz = new THREE.Group(); scene.add(raiz);
+  const luces = new THREE.Group(); scene.add(luces);
+  { const h = new THREE.HemisphereLight(0xffffff, 0x4a4640, .55), d = new THREE.DirectionalLight(0xfff2e0, 1.1); d.position.set(.5, 1, .35); luces.add(h, d); }
+
+  /* ---------- Cargador universal ---------- */
+  const BASE = "https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/";
+  const scripts = {};
+  const pide = p => scripts[p] || (scripts[p] = new Promise((ok, no) => { const s = document.createElement("script"); s.src = BASE + p; s.onload = ok; s.onerror = () => { delete scripts[p]; no(new Error("No se ha podido descargar el lector de este formato. Revisa la conexión.")); }; document.head.append(s); }));
+  const nombreBase = u => decodeURIComponent(String(u).split(/[?#]/)[0]).replace(/\\/g, "/").split("/").pop().toLowerCase();
+  const ext = n => (n.match(/\.([a-z0-9]+)$/i) || [, ""])[1].toLowerCase();
+  const VACIO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+  const FORMATOS = ["glb", "gltf", "fbx", "obj", "dae", "3mf", "3ds", "amf", "ply", "stl", "pcd", "xyz"];
+  const IMAGEN = ["png", "jpg", "jpeg", "webp", "bmp", "gif", "tga"];
+
+  async function recoger(entrada) {
+    /* Convierte lo que llega (archivos, carpetas, ZIP) en una tabla nombre → bytes */
+    const tabla = new Map(), modelos = [];
+    const pon = (ruta, datos) => {
+      if (/__MACOSX|\/\._/.test(ruta)) return;
+      const n = nombreBase(ruta), e = ext(n);
+      tabla.set(n, datos);
+      if (FORMATOS.includes(e)) modelos.push({ nombre: ruta.replace(/\\/g, "/").split("/").pop(), e, datos });
+    };
+    for (const f of entrada) {
+      if (ext(f.name) === "zip") {
+        await estado("Descomprimiendo " + f.name);
+        await pide("libs/fflate.min.js");
+        const b = new Uint8Array(await f.arrayBuffer());
+        const z = await new Promise((ok, no) => fflate.unzip(b, (er, d) => er ? no(new Error("El ZIP está dañado o protegido con contraseña.")) : ok(d)));
+        for (const k in z) if (!k.endsWith("/")) pon(k, z[k]);
+      } else pon(f.name, new Uint8Array(await f.arrayBuffer()));
+    }
+    return { tabla, modelos };
+  }
+  async function preparaTGA(tabla) {
+    const tga = [...tabla.keys()].filter(k => ext(k) === "tga"); if (!tga.length) return;
+    await pide("loaders/TGALoader.js");
+    for (const k of tga) {
+      const d = tabla.get(k), r = new THREE.TGALoader().parse(d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength));
+      const c = document.createElement("canvas"); c.width = r.width; c.height = r.height;
+      const im = new ImageData(new Uint8ClampedArray(r.data), r.width, r.height); c.getContext("2d").putImageData(im, 0, 0);
+      const b = await new Promise(o => c.toBlob(o, "image/png")); tabla.set(k, new Uint8Array(await b.arrayBuffer()));
+    }
+  }
+  function gestor(tabla, faltan) {
+    const m = new THREE.LoadingManager(), urls = new Map();
+    m.setURLModifier(u => {
+      if (/^(blob:|data:)/.test(u)) return u;
+      const n = nombreBase(u), d = tabla.get(n);
+      if (!d) { if (IMAGEN.includes(ext(n)) || !ext(n)) faltan.add(n); return VACIO; }
+      if (!urls.has(n)) urls.set(n, URL.createObjectURL(new Blob([d], { type: tipoImg(n) })));
+      return urls.get(n);
+    });
+    return m;
+  }
+  const tipoImg = n => ({ png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", bmp: "image/bmp", gif: "image/gif" })[ext(n)] || "application/octet-stream";
+  const aB = d => d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength);
+  const dec = new TextDecoder();
+  function base64(u) { const s = atob(u.slice(u.indexOf(",") + 1)), b = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
+  /* Un .gltf con archivos sueltos se empaqueta en un solo GLB en memoria */
+  function gltfAGlb(texto, tabla) {
+    const j = JSON.parse(texto), trozos = []; let pos = 0;
+    const mete = b => { const o = pos; trozos.push(b); pos += b.length; const r = (4 - pos % 4) % 4; if (r) { trozos.push(new Uint8Array(r)); pos += r; } return o; };
+    const lee = (uri, q) => {
+      if (uri.startsWith("data:")) return base64(uri);
+      const n = nombreBase(uri), d = tabla.get(n);
+      if (!d) throw new Error(`Falta ${uri}, que ${q}. Selecciona todos los archivos a la vez o súbelos en un ZIP.`);
+      return d;
+    };
+    const base = (j.buffers || []).map(b => mete(lee(b.uri, "contiene la geometría")));
+    (j.bufferViews || []).forEach(v => { v.byteOffset = (v.byteOffset || 0) + base[v.buffer]; v.buffer = 0; });
+    j.bufferViews = j.bufferViews || [];
+    (j.images || []).forEach(im => {
+      if (!im.uri) return;
+      let d; try { d = lee(im.uri, "es una textura"); } catch (e) { d = base64(VACIO); }
+      const mime = im.uri.startsWith("data:") ? im.uri.slice(5, im.uri.indexOf(";")) : tipoImg(im.uri);
+      j.bufferViews.push({ buffer: 0, byteOffset: mete(d), byteLength: d.length }); im.bufferView = j.bufferViews.length - 1; im.mimeType = mime; delete im.uri;
+    });
+    j.buffers = [{ byteLength: pos }];
+    const js = new TextEncoder().encode(JSON.stringify(j)), pj = (4 - js.length % 4) % 4, total = 12 + 8 + js.length + pj + 8 + pos;
+    const out = new Uint8Array(total), dv = new DataView(out.buffer);
+    dv.setUint32(0, 0x46546c67, true); dv.setUint32(4, 2, true); dv.setUint32(8, total, true);
+    dv.setUint32(12, js.length + pj, true); dv.setUint32(16, 0x4e4f534a, true); out.set(js, 20); out.fill(32, 20 + js.length, 20 + js.length + pj);
+    let o = 20 + js.length + pj; dv.setUint32(o, pos, true); dv.setUint32(o + 4, 0x004e4942, true); o += 8;
+    for (const t of trozos) { out.set(t, o); o += t.length; }
+    return out;
+  }
+  async function leeGLB(datos) {
+    await pide("loaders/GLTFLoader.js");
+    const dv = new DataView(datos.buffer, datos.byteOffset), cab = dec.decode(datos.subarray(20, 20 + dv.getUint32(12, true)));
+    const L = new THREE.GLTFLoader();
+    if (cab.includes("KHR_draco_mesh_compression")) {
+      await pide("loaders/DRACOLoader.js");
+      const d = new THREE.DRACOLoader(); d.setDecoderPath(new URL("vendor/", location.href).href); d.setDecoderConfig({ type: "js" }); L.setDRACOLoader(d);
+    }
+    if (cab.includes("meshopt_compression")) { await pide("libs/meshopt_decoder.js"); L.setMeshoptDecoder(window.MeshoptDecoder); }
+    if (cab.includes("KHR_texture_basisu")) throw new Error("Este archivo usa texturas KTX2, que el visor no abre. Expórtalo con texturas JPG o PNG.");
+    return new Promise((res, rej) => {
+      const cib = window.createImageBitmap;
+      try { window.createImageBitmap = undefined; } catch (e) {}
+      try { L.parse(aB(datos), "", g => res(g.scene), rej); } catch (e) { rej(e); }
+      finally { try { window.createImageBitmap = cib; } catch (e) {} }
+    });
+  }
+  async function leeModelo(m, tabla, faltan) {
+    const G = gestor(tabla, faltan), d = m.datos, e = m.e;
+    if (e === "glb") return leeGLB(d);
+    if (e === "gltf") return leeGLB(gltfAGlb(dec.decode(d), tabla));
+    if (e === "obj") {
+      await pide("loaders/OBJLoader.js"); await pide("loaders/MTLLoader.js");
+      const txt = dec.decode(d), L = new THREE.OBJLoader(G), lib = (txt.match(/^\s*mtllib\s+(.+?)\s*$/m) || [])[1];
+      const claveMtl = lib && tabla.has(nombreBase(lib)) ? nombreBase(lib) : [...tabla.keys()].find(k => ext(k) === "mtl");
+      if (claveMtl) { const M = new THREE.MTLLoader(G).parse(dec.decode(tabla.get(claveMtl)), ""); M.preload(); L.setMaterials(M); }
+      return L.parse(txt);
+    }
+    if (e === "fbx") {
+      await pide("libs/fflate.min.js"); await pide("curves/NURBSUtils.js"); await pide("curves/NURBSCurve.js"); await pide("loaders/FBXLoader.js");
+      return new THREE.FBXLoader(G).parse(aB(d), "");
+    }
+    if (e === "dae") { await pide("loaders/ColladaLoader.js"); return new THREE.ColladaLoader(G).parse(dec.decode(d), "").scene; }
+    if (e === "3ds") { await pide("loaders/TDSLoader.js"); return new THREE.TDSLoader(G).parse(aB(d), ""); }
+    if (e === "3mf") { await pide("libs/fflate.min.js"); await pide("loaders/3MFLoader.js"); return new THREE.ThreeMFLoader(G).parse(aB(d)); }
+    if (e === "amf") { await pide("libs/fflate.min.js"); await pide("loaders/AMFLoader.js"); return new THREE.AMFLoader(G).parse(aB(d)); }
+    if (e === "stl") { await pide("loaders/STLLoader.js"); const g = new THREE.STLLoader(G).parse(aB(d)); return new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0xbdbdb8, roughness: .7, vertexColors: !!g.attributes.color })); }
+    if (e === "ply") {
+      await pide("loaders/PLYLoader.js"); const g = new THREE.PLYLoader(G).parse(aB(d));
+      if (g.index) return new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: .8, vertexColors: !!g.attributes.color }));
+      return new THREE.Points(g, new THREE.PointsMaterial({ size: .012, vertexColors: !!g.attributes.color, color: g.attributes.color ? 0xffffff : 0xbbbbbb }));
+    }
+    if (e === "pcd") { await pide("loaders/PCDLoader.js"); const p = new THREE.PCDLoader(G).parse(aB(d)); p.material.size = .012; return p; }
+    if (e === "xyz") {
+      const nums = dec.decode(d).trim().split(/\r?\n/).map(l => l.trim().split(/[\s,]+/).map(Number)).filter(l => l.length >= 3 && !isNaN(l[0]));
+      const pos = new Float32Array(nums.length * 3), col = new Float32Array(nums.length * 3), hay = nums[0] && nums[0].length >= 6, k = hay && nums.some(l => l[3] > 1) ? 1 / 255 : 1;
+      nums.forEach((l, i) => { pos.set(l.slice(0, 3), i * 3); if (hay) col.set(l.slice(3, 6).map(v => v * k), i * 3); });
+      const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); if (hay) g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+      return new THREE.Points(g, new THREE.PointsMaterial({ size: .012, vertexColors: hay, color: hay ? 0xffffff : 0xbbbbbb }));
+    }
+    throw new Error("Formato no reconocido.");
+  }
+  /* Un escaneo trae la luz en la textura y se muestra tal cual; un modelo CAD necesita luces */
+  function acabado(m) {
+    let total = 0, tex = 0, mats = new Set(), normal = false;
+    m.traverse(o => {
+      if (!o.isMesh) return;
+      const g = o.geometry, n = (g.index ? g.index.count : g.attributes.position.count) / 3, ml = Array.isArray(o.material) ? o.material : [o.material];
+      total += n; if (ml.some(a => a && a.map) || g.attributes.color) tex += n;
+      ml.forEach(a => { if (a) { mats.add(a); if (a.normalMap) normal = true; } });
+    });
+    const escaneo = total > 0 && tex / total > .7 && mats.size <= 30 && !normal;
+    let env = false;
+    m.traverse(o => {
+      if (o.isPoints) { o.frustumCulled = false; return; }
+      if (!o.isMesh) return;
+      const g = o.geometry; if (!g.attributes.normal) g.computeVertexNormals();
+      const vc = !!g.attributes.color;
+      const conv = a => {
+        if (!a) return new THREE.MeshStandardMaterial({ color: 0xbbbbbb, side: THREE.DoubleSide });
+        let b;
+        if (escaneo && (a.map || vc)) b = new THREE.MeshBasicMaterial({ map: a.map || null, color: a.map ? 0xffffff : a.color, vertexColors: vc, toneMapped: false, transparent: a.transparent, opacity: a.opacity, alphaTest: a.alphaTest });
+        else if (a.isMeshStandardMaterial) { b = a; env = true; }
+        else { b = new THREE.MeshStandardMaterial({ map: a.map || null, color: a.color || 0xbbbbbb, normalMap: a.normalMap || null, emissive: a.emissive || 0, emissiveMap: a.emissiveMap || null, roughness: .72, metalness: 0, vertexColors: vc, transparent: a.transparent, opacity: a.opacity === undefined ? 1 : a.opacity, alphaTest: a.alphaTest || 0 }); env = true; }
+        b.side = THREE.DoubleSide; return b;
+      };
+      o.material = Array.isArray(o.material) ? o.material.map(conv) : conv(o.material);
+    });
+    return { escaneo, env };
+  }
+  async function entorno() {
+    if (scene.environment) return;
+    await pide("environments/RoomEnvironment.js");
+    const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromScene(new THREE.RoomEnvironment(), .04).texture; pm.dispose();
+  }
+  function triangulos(grupo) {
+    grupo.updateMatrixWorld(true);
+    let total = 0; const ms = [];
+    grupo.traverse(o => { if (!o.isMesh || o.userData.noCollide) return; const g = o.geometry, n = g.index ? g.index.count : g.attributes.position.count; ms.push(o); total += n - n % 3; });
+    const out = new Float32Array(total * 3), v = new THREE.Vector3(); let p = 0;
+    for (const o of ms) {
+      const g = o.geometry, pos = g.attributes.position, idx = g.index, n = idx ? idx.count : pos.count, lim = n - n % 3;
+      for (let i = 0; i < lim; i++) { v.fromBufferAttribute(pos, idx ? idx.getX(i) : i).applyMatrix4(o.matrixWorld); out[p++] = v.x; out[p++] = v.y; out[p++] = v.z; }
+    }
+    return out;
+  }
+  /* Orientación: el eje con más superficie plana es el vertical */
+  function orientar(m, e) {
+    m.rotation.set(0, 0, 0); m.scale.setScalar(1);
+    const t = triangulos(m); if (!t.length) return 0;
+    const n = t.length / 9, paso = Math.max(1, Math.floor(n / 300000)), A = [0, 0, 0], S = [0, 0, 0], M = [0, 0, 0], lo = [1e18, 1e18, 1e18], hi = [-1e18, -1e18, -1e18];
+    for (let i = 0; i < n; i += paso) {
+      const p = i * 9, ax = t[p + 3] - t[p], ay = t[p + 4] - t[p + 1], az = t[p + 5] - t[p + 2], bx = t[p + 6] - t[p], by = t[p + 7] - t[p + 1], bz = t[p + 8] - t[p + 2];
+      const nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx, l = Math.hypot(nx, ny, nz) || 1e-12, N = [nx / l, ny / l, nz / l], c = [(t[p] + t[p + 3] + t[p + 6]) / 3, (t[p + 1] + t[p + 4] + t[p + 7]) / 3, (t[p + 2] + t[p + 5] + t[p + 8]) / 3];
+      for (let k = 0; k < 3; k++) { if (Math.abs(N[k]) > .9) A[k] += l / 2; S[k] += l / 2; M[k] += c[k] * l / 2; lo[k] = Math.min(lo[k], c[k]); hi[k] = Math.max(hi[k], c[k]); }
+    }
+    const tope = (e === "glb" || e === "gltf") ? .35 : .75, may = Math.max(...A);
+    if (A[1] >= may * tope) return 0;
+    const eje = A[0] > A[2] ? 0 : 2, centro = M[eje] / S[eje], arriba = centro <= (lo[eje] + hi[eje]) / 2 + (hi[eje] - lo[eje]) * .08;
+    if (eje === 2) m.rotation.x = arriba ? -Math.PI / 2 : Math.PI / 2; else m.rotation.z = arriba ? Math.PI / 2 : -Math.PI / 2;
+    return eje;
+  }
+  function escalar(m) {
+    const b = new THREE.Box3().setFromObject(m), s = b.getSize(new THREE.Vector3()), mx = Math.max(s.x, s.y, s.z);
+    if (!isFinite(mx) || mx === 0) return 1;
+    if (s.y > 600) return .001;
+    if (s.y > 12 && mx > 60) return .01;
+    if (mx < .7) return 6 / mx;
+    return 1;
+  }
+
+  /* ---------- Casa de muestra ---------- */
+  const lienzoT = (s, dib, rep = true) => {
+    const c = document.createElement("canvas"); c.width = c.height = s; dib(c.getContext("2d"), s);
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    if (rep) t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+  };
+  const r = (a, b) => a + Math.random() * (b - a);
+  const grano = (g, s, n, al) => { for (let i = 0; i < n; i++) { const v = Math.random() > .5 ? 255 : 0; g.fillStyle = `rgba(${v},${v},${v},${r(0, al)})`; g.fillRect(r(0, s), r(0, s), r(1, 3), r(1, 3)); } };
+  function mapas() {
+    return {
+      roble: lienzoT(2048, (g, s) => {
+        const col = 12, h = s / col;
+        for (let i = 0; i < col; i++) {
+          let x = -r(0, s * .5);
+          while (x < s) {
+            const l = s * r(.55, .9), j = r(-9, 9), y = i * h;
+            const pinta = xx => { g.fillStyle = `rgb(${172 + j},${132 + j * .9},${96 + j * .7})`; g.fillRect(xx, y, l, h);
+              for (let k = 0; k < 30; k++) { const yy = y + r(0, h); g.strokeStyle = `rgba(70,40,18,${r(.03, .13)})`; g.lineWidth = r(.6, 2); g.beginPath(); g.moveTo(xx, yy); g.bezierCurveTo(xx + l * .3, yy + r(-4, 4), xx + l * .7, yy + r(-4, 4), xx + l, yy + r(-3, 3)); g.stroke(); }
+              g.fillStyle = "rgba(50,30,14,.3)"; g.fillRect(xx, y, 1.2, h); };
+            pinta(x); if (x + l > s) pinta(x - s);
+            x += l;
+          }
+          g.fillStyle = "rgba(50,30,14,.32)"; g.fillRect(0, i * h, s, 1.4);
+        }
+      }),
+      traver: lienzoT(1024, (g, s) => {
+        g.fillStyle = "#d5cdc0"; g.fillRect(0, 0, s, s);
+        for (let i = 0; i < 90; i++) { const y = r(0, s); g.strokeStyle = `rgba(${Math.random() > .5 ? "150,132,108" : "244,238,226"},${r(.015, .07)})`; g.lineWidth = r(1, 12); g.beginPath(); g.moveTo(-10, y); g.bezierCurveTo(s * .3, y + r(-12, 12), s * .6, y + r(-12, 12), s + 10, y); g.stroke(); }
+        grano(g, s, 6000, .035);
+      }),
+      suelob: lienzoT(1024, (g, s) => { g.fillStyle = "#c8c1b6"; g.fillRect(0, 0, s, s); grano(g, s, 9000, .04); g.fillStyle = "rgba(60,55,48,.35)"; g.fillRect(0, 0, s, 1.5); g.fillRect(0, s / 2, s, 1.5); g.fillRect(0, 0, 1.5, s); g.fillRect(s / 2, 0, 1.5, s); }),
+      grava: lienzoT(1024, (g, s) => { g.fillStyle = "#c9c6bf"; g.fillRect(0, 0, s, s); for (let i = 0; i < 24000; i++) { const v = r(150, 235) | 0; g.fillStyle = `rgba(${v},${v - 2},${v - 6},.75)`; g.beginPath(); g.ellipse(r(0, s), r(0, s), r(1.5, 5), r(1.2, 4), r(0, 3), 0, 7); g.fill(); } }),
+      yeso: lienzoT(512, (g, s) => { g.fillStyle = "#e8e7e3"; g.fillRect(0, 0, s, s); grano(g, s, 5000, .012); }),
+      lino: lienzoT(512, (g, s) => { g.fillStyle = "#d9d3c7"; g.fillRect(0, 0, s, s); for (let i = 0; i < s; i += 3) { g.fillStyle = `rgba(90,80,62,${r(.02, .09)})`; g.fillRect(i, 0, 1, s); g.fillStyle = `rgba(255,250,240,${r(.02, .09)})`; g.fillRect(0, i, s, 1); } })
+    };
+  }
+  function cuadro(i) {
+    return lienzoT(512, (g, s) => {
+      g.fillStyle = "#e6e1d8"; g.fillRect(0, 0, s, s);
+      const c = [["#1e2428", "#b9a58a"], ["#30403c", "#d8cfc1"], ["#8a4f33", "#1e2428"]][i];
+      g.fillStyle = c[0]; g.fillRect(s * .1, s * .1, s * .8, s * .52); g.fillStyle = c[1]; g.fillRect(s * .1, s * .66, s * .8, s * .24); grano(g, s, 3000, .05);
+    }, false);
+  }
+  const POCHE = `#include <dithering_fragment>\nif(!gl_FrontFacing) gl_FragColor.rgb=vec3(.02);`;
+  function matBasico(op) {
+    const m = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, ...op });
+    m.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace("#include <dithering_fragment>", POCHE).replace("lightMapTexel.rgb * lightMapIntensity", "(lightMapTexel.rgb * lightMapIntensity) / (1. + lightMapTexel.rgb * lightMapIntensity / 3.2)"); };
+    return m;
+  }
+  function sueloReflejo(map, luz, INT) {
+    const V = [[0, 0, 6, 8, 1, 0, .7, 5.3], [0, 0, 6, 8, 0, 6, 4.2, 7.9], [6, 0, 16, 4, 1, 0, 7, 15], [6, 0, 16, 4, 1, 4, 6.2, 10.3], [10.5, 4, 16, 8, 0, 16, 5, 7], [10.5, 4, 16, 8, 0, 10.5, 4.3, 7.7], [0, 8, 16, 9.5, 1, 8, 6.2, 10.3], [0, 9.5, 7, 13, 1, 13, 1, 5], [10, 9.5, 16, 13, 1, 13, 11, 15]];
+    const m = matBasico({ map, lightMap: luz, lightMapIntensity: INT }), base = m.onBeforeCompile;
+    m.onBeforeCompile = sh => {
+      base(sh);
+      sh.uniforms.uZ = { value: V.map(v => new THREE.Vector4(v[0], v[1], v[2], v[3])) };
+      sh.uniforms.uG = { value: V.map(v => new THREE.Vector4(v[4], v[5], v[6], v[7])) };
+      sh.vertexShader = "varying vec3 vP;\n" + sh.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvP=position;");
+      sh.fragmentShader = `varying vec3 vP;uniform vec4 uZ[${V.length}];uniform vec4 uG[${V.length}];\n` + sh.fragmentShader.replace("#include <tonemapping_fragment>", `
+        vec3 eV=normalize(vP-cameraPosition),eR=vec3(eV.x,-eV.y,eV.z);float eF=.035+.965*pow(1.-clamp(-eV.y,0.,1.),5.),eG=0.;
+        for(int i=0;i<${V.length};i++){vec4 z=uZ[i],g=uG[i];if(vP.x<z.x||vP.x>z.z||vP.z<z.y||vP.z>z.w)continue;
+          float o=g.x<.5?vP.x:vP.z,d=g.x<.5?eR.x:eR.z,t=(g.y-o)/d;if(t<=0.)continue;
+          vec3 h=vP+eR*t;float a=g.x<.5?h.z:h.x,e=.05+t*.1;
+          eG=max(eG,smoothstep(g.z-e,g.z+e,a)*(1.-smoothstep(g.w-e,g.w+e,a))*(1.-smoothstep(2.3,2.75+e*2.,h.y)));}
+        gl_FragColor.rgb+=eG*eF*3.2;
+        #include <tonemapping_fragment>`);
+    };
+    return m;
+  }
+  function construirCasa(luz) {
+    const casa = crearCasa(), tx = mapas(), S = LUZ.S, grupos = {}, UV = [[2, 1], [2, 1], [0, 2], [0, 2], [0, 1], [0, 1]];
+    for (let i = 0; i < LUZ.c.length; i += 6) {
+      const [id, f, x, y, w, h] = LUZ.c.slice(i, i + 6), p = casa.cajas[id], M = casa.MATS[p.m], ax = f >> 1, s = f & 1 ? -1 : 1, [u, v] = UV[f];
+      const k = p.m + (p.tex === undefined ? "" : p.tex) + (p.suelo ? "s" : ""), G = grupos[k] || (grupos[k] = { pos: [], uv: [], uv2: [], p, M });
+      const esq = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([a, b]) => {
+        const q = [0, 0, 0]; q[ax] = (s > 0 ? p.b : p.a)[ax]; q[u] = a ? p.b[u] : p.a[u]; q[v] = b ? p.b[v] : p.a[v];
+        const t = p.tex !== undefined ? [ax === 2 ? a : b, ax === 2 ? b : a] : [q[u] / (M.uv || 1), q[v] / (M.uv || 1)];
+        return { q, t, l: [(x + a * w) / S, (y + b * h) / S] };
+      });
+      const nu = [0, 0, 0], nv = [0, 0, 0]; nu[u] = 1; nv[v] = 1;
+      const dir = [nu[1] * nv[2] - nu[2] * nv[1], nu[2] * nv[0] - nu[0] * nv[2], nu[0] * nv[1] - nu[1] * nv[0]][ax] * s;
+      for (const o of dir > 0 ? [0, 1, 2, 0, 2, 3] : [0, 2, 1, 0, 3, 2]) { G.pos.push(...esq[o].q); G.uv.push(...esq[o].t); G.uv2.push(...esq[o].l); }
+    }
+    const maps = { robleM: tx.roble, traver: tx.traver, suelob: tx.suelob, grava: tx.grava, yeso: tx.yeso, techo: tx.yeso, lino: tx.lino }, INT = LUZ.MAXL;
+    for (const k in grupos) {
+      const G = grupos[k], g = new THREE.BufferGeometry(), name = G.p.m; let m;
+      g.setAttribute("position", new THREE.Float32BufferAttribute(G.pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(G.uv, 2)); g.setAttribute("uv2", new THREE.Float32BufferAttribute(G.uv2, 2));
+      if (name === "luz") m = matBasico({ color: 0xfff6e8, toneMapped: false });
+      else if (G.p.tex !== undefined) m = matBasico({ map: cuadro(G.p.tex), lightMap: luz, lightMapIntensity: INT });
+      else if (name === "roble") m = sueloReflejo(tx.roble, luz, INT);
+      else if (name === "sofa") m = matBasico({ map: tx.lino, color: 0x9d9a90, lightMap: luz, lightMapIntensity: INT });
+      else if (maps[name]) m = matBasico({ map: maps[name], lightMap: luz, lightMapIntensity: INT });
+      else m = matBasico({ color: new THREE.Color().setRGB(...G.M.al), lightMap: luz, lightMapIntensity: INT });
+      if (G.p.suelo) {
+        m = new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(...G.M.al), lightMap: luz, lightMapIntensity: INT });
+        m.onBeforeCompile = sh => {
+          sh.uniforms.uW = U.uW;
+          sh.vertexShader = "varying vec2 vW;\n" + sh.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvW=position.xz;");
+          sh.fragmentShader = "varying vec2 vW;uniform float uW;\n" + sh.fragmentShader.replace("#include <dithering_fragment>", "#include <dithering_fragment>\nfloat dF=smoothstep(9.,26.,length(vW-vec2(8.,6.5)));gl_FragColor.rgb=mix(mix(gl_FragColor.rgb,vec3(0.),dF),vec3(1.),uW);");
+        };
+      }
+      const e = new THREE.Mesh(g, m); e.frustumCulled = false; if (G.p.suelo) e.userData.noCollide = true; raiz.add(e);
+    }
+    const mv = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .05, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+    casa.vidrios.forEach(v => { const e = new THREE.Mesh(new THREE.BoxGeometry(v.b[0] - v.a[0], v.b[1] - v.a[1], v.b[2] - v.a[2]), mv); e.position.set((v.a[0] + v.b[0]) / 2, (v.a[1] + v.b[1]) / 2, (v.a[2] + v.b[2]) / 2); raiz.add(e); });
+    const sol = new THREE.Vector3(...casa.sol).normalize();
+    casa.curvos.forEach(o => {
+      if (o.t === "esfera") { const e = new THREE.Mesh(new THREE.SphereGeometry(o.r, 32, 24), new THREE.MeshBasicMaterial({ color: 0xfff1da, toneMapped: false })); e.position.set(...o.p); e.userData.noCollide = true; raiz.add(e); return; }
+      const g = new THREE.IcosahedronGeometry(o.r, 5), pos = g.attributes.position, col = new Float32Array(pos.count * 3), n = new THREE.Vector3();
+      const ru = (x, y, z) => Math.sin(x * 3.1 + 1) * Math.sin(y * 2.7 + 2) * Math.sin(z * 3.3) + .4 * Math.sin(x * 7 + y * 6) * Math.sin(z * 8);
+      for (let i = 0; i < pos.count; i++) { n.fromBufferAttribute(pos, i).normalize(); const d = o.r * (1 + .16 * ru(n.x, n.y, n.z)); pos.setXYZ(i, n.x * d * 1.25, Math.max(-.42, n.y * d * .8), n.z * d); }
+      g.computeVertexNormals(); const nr = g.attributes.normal;
+      for (let i = 0; i < pos.count; i++) { n.fromBufferAttribute(nr, i); const l = .11 + .62 * Math.max(0, n.dot(sol)) + .1 * (n.y * .5 + .5), a = Math.min(1, (pos.getY(i) + .34) / .45), v = l * (.45 + .55 * Math.max(0, a)); col[i * 3] = v * 1.02; col[i * 3 + 1] = v; col[i * 3 + 2] = v * .96; }
+      g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+      const e = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true })); e.position.set(...o.p); e.userData.noCollide = true; raiz.add(e);
+    });
+    return { name: "casa-patio", rooms: casa.salas, spawn: casa.inicio, mergeUnnamed: true, techo: casa.H };
+  }
+
+  /* ---------- Estado ---------- */
+  const T = {
+    modo: "portada", yaw: 0, pitch: 0, x: 0, z: 0, py: 0, vx: 0, vz: 0, andado: 0, fov: 72, fovO: 72, eye: CONFIG.eye, scale: 1, tilt: 0, auto: 1, clip: 1000,
+    orbit: .62, elev: .95, zoom: 1, centro: new THREE.Vector3(), radio: 22, fly: null, sala: -1, nivel: 0, teclas: {}, joy: { x: 0, y: 0, id: null },
+    modelo: null, brillo: 1, muestra: false, libre: false, virtual: false, sueloV: 0, nombre: "", nubes: false
+  };
+  let C = null, planos = [], P = null, cfg = {}, salas = [], etiquetas = [], cajaM = null;
+  const lienzo = document.createElement("canvas"), lctx = lienzo.getContext("2d");
+  const celda = (x, z, q = P) => { if (!q) return -1; const i = Math.floor((x - q.ox) / q.cell), j = Math.floor((z - q.oz) / q.cell); return i < 0 || j < 0 || i >= q.w || j >= q.h ? -1 : i + j * q.w; };
+
+  function calcular(tris) {
+    return new Promise(res => {
+      try {
+        const url = URL.createObjectURL(new Blob([analizar.toString() + plano.toString() + ";onmessage=e=>{const r=analizar(e.data.t);const q=[r.bvh.cajas.buffer,r.bvh.der.buffer,r.bvh.ini.buffer,r.bvh.cue.buffer,r.bvh.tris.buffer];r.planos.forEach(p=>q.push(p.walk.buffer,p.block.buffer,p.ground.buffer,p.clear.buffer,p.free.buffer,p.region.buffer));postMessage(r,q);}"], { type: "text/javascript" }));
+        const w = new Worker(url);
+        w.onmessage = e => { w.terminate(); URL.revokeObjectURL(url); res(e.data); };
+        w.onerror = () => { w.terminate(); res(analizar(tris)); };
+        w.postMessage({ t: tris });
+      } catch (e) { res(analizar(tris)); }
+    });
+  }
+  /* Rayo contra la malla real. Devuelve la distancia y deja la normal en hN */
+  const pilaR = new Int32Array(256); let hN = 0;
+  function rayo(ox, oy, oz, dx, dy, dz, tmax) {
+    if (!C) return Infinity;
+    const { cajas: B, der, ini, cue, tris: V } = C, ix = 1 / (dx || 1e-9), iy = 1 / (dy || 1e-9), iz = 1 / (dz || 1e-9);
+    let sp = 0, mejor = tmax, hit = false; pilaR[sp++] = 0;
+    while (sp) {
+      const i = pilaR[--sp], o = i * 6;
+      let t0 = (B[o] - ox) * ix, t1 = (B[o + 3] - ox) * ix, a; if (t0 > t1) { a = t0; t0 = t1; t1 = a; }
+      let s0 = (B[o + 1] - oy) * iy, s1 = (B[o + 4] - oy) * iy; if (s0 > s1) { a = s0; s0 = s1; s1 = a; } if (s0 > t0) t0 = s0; if (s1 < t1) t1 = s1;
+      s0 = (B[o + 2] - oz) * iz; s1 = (B[o + 5] - oz) * iz; if (s0 > s1) { a = s0; s0 = s1; s1 = a; } if (s0 > t0) t0 = s0; if (s1 < t1) t1 = s1;
+      if (t0 > t1 || t1 < 0 || t0 > mejor) continue;
+      const c = cue[i];
+      if (c) {
+        for (let k = ini[i], e = k + c; k < e; k++) {
+          const p = k * 9, ax = V[p], ay = V[p + 1], az = V[p + 2], ux = V[p + 3] - ax, uy = V[p + 4] - ay, uz = V[p + 5] - az, vx = V[p + 6] - ax, vy = V[p + 7] - ay, vz = V[p + 8] - az;
+          const px = dy * vz - dz * vy, py = dz * vx - dx * vz, pz = dx * vy - dy * vx, det = ux * px + uy * py + uz * pz;
+          if (det > -1e-12 && det < 1e-12) continue;
+          const f = 1 / det, tx = ox - ax, ty = oy - ay, tz = oz - az, u = (tx * px + ty * py + tz * pz) * f; if (u < 0 || u > 1) continue;
+          const qx = ty * uz - tz * uy, qy = tz * ux - tx * uz, qz = tx * uy - ty * ux, v = (dx * qx + dy * qy + dz * qz) * f; if (v < 0 || u + v > 1) continue;
+          const t = (vx * qx + vy * qy + vz * qz) * f;
+          if (t > 1e-4 && t < mejor) { mejor = t; hit = true; const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; hN = Math.abs(ny) / (Math.sqrt(nx * nx + ny * ny + nz * nz) || 1e-12); }
+        }
+      } else { pilaR[sp++] = der[i]; pilaR[sp++] = i + 1; }
+    }
+    return hit ? mejor : Infinity;
+  }
+  const PASO = .42, RADIO = .24;
+  /* Suelo real bajo un punto; null si no hay nada pisable */
+  function sueloEn(x, y, z) {
+    const o = y + PASO, d = rayo(x, o, z, 0, -1, 0, PASO + 2.4);
+    if (d === Infinity) return T.virtual ? Math.max(T.sueloV, -1e9) : null;
+    if (hN < .45) return null;
+    const g = o - d; return T.virtual ? Math.max(g, T.sueloV) : g;
+  }
+
+  /* ---------- Plano y estancias ---------- */
+  function nombrar() {
+    salas = []; const fijos = [...(cfg.rooms || []), ...(guarda.leer("pc:nombres:" + cfg.name) || [])];
+    planos.forEach((q, ni) => {
+      q.salaDe = []; const nom = {}, por = {};
+      for (const p of fijos) { if ((p.nivel || 0) !== ni) continue; const k = celda(p.x, p.z, q); if (k >= 0 && q.region[k] >= 0) nom[q.region[k]] = p.name; }
+      const add = (n, r) => {
+        let s = por[n]; if (!s) { s = por[n] = { nombre: n, area: 0, x: r.x, z: r.z, gr: 0, i: salas.length, nivel: ni }; salas.push(s); }
+        s.area += r.area; if (r.area > s.gr) { s.gr = r.area; s.x = r.x; s.z = r.z; } q.salaDe[r.id] = s.i;
+      };
+      q.rooms.filter(r => nom[r.id]).forEach(r => add(nom[r.id], r));
+      let c = 0;
+      q.rooms.filter(r => !nom[r.id]).sort((a, b) => b.area - a.area).forEach(r => {
+        const prop = salas.filter(s => s.nivel === ni);
+        if (cfg.mergeUnnamed && prop.length) { let m = prop[0], d = 1e9; for (const s of prop) { const e = (s.x - r.x) ** 2 + (s.z - r.z) ** 2; if (e < d) { d = e; m = s; } } add(m.nombre, r); }
+        else add((planos.length > 1 ? `P${ni + 1} · ` : "") + "Estancia " + (++c), r);
+      });
+    });
+    $("etiquetas").textContent = "";
+    etiquetas = salas.map(s => { const b = document.createElement("button"); b.type = "button"; b.textContent = s.nombre; b.addEventListener("click", () => { colocar(s); entrar(); }); $("etiquetas").append(b); return b; });
+  }
+  function usaPlano(i) {
+    if (!planos[i]) { P = null; return; }
+    T.nivel = i; P = planos[i]; T.sala = -1;
+    if (!P.caja) { let xa = 1e9, xb = -1e9, za = 1e9, zb = -1e9; for (let k = 0; k < P.w * P.h; k++) if (P.walk[k] || P.block[k]) { const x = P.ox + ((k % P.w) + .5) * P.cell, z = P.oz + (Math.floor(k / P.w) + .5) * P.cell; if (x < xa) xa = x; if (x > xb) xb = x; if (z < za) za = z; if (z > zb) zb = z; } P.caja = { xa, xb, za, zb }; }
+    lienzo.width = P.w; lienzo.height = P.h;
+    const im = lctx.createImageData(P.w, P.h);
+    for (let k = 0; k < P.w * P.h; k++) { const j = k * 4; im.data[j] = im.data[j + 1] = im.data[j + 2] = 255; im.data[j + 3] = P.block[k] === 2 ? 235 : P.block[k] ? 60 : P.walk[k] ? 16 : 0; }
+    lctx.putImageData(im, 0, 0);
+    $("etiPlanta").hidden = planos.length < 2; $("etiPlanta").textContent = `Planta ${i + 1} de ${planos.length}`;
+  }
+  function hudSala() {
+    if (!P) return;
+    const k = celda(T.x, T.z), rg = k >= 0 ? P.region[k] : -1, i = rg >= 0 ? P.salaDe[rg] : T.sala;
+    if (i === T.sala || i === undefined || i < 0) return;
+    T.sala = i; const s = salas[i]; $("nombre").textContent = s.nombre; $("datos").textContent = `${fmt(s.area, 1)} m²`; lista();
+  }
+  function lista() {
+    const ul = $("lista"); if (!ul) return; ul.textContent = "";
+    salas.forEach((s, i) => {
+      const li = document.createElement("li"), b = document.createElement("button"), n = document.createElement("span"), a = document.createElement("span");
+      b.type = "button"; if (i === T.sala) b.className = "actual"; n.textContent = s.nombre; a.className = "dato"; a.textContent = fmt(s.area, 1) + " m²";
+      b.append(n, a); b.addEventListener("click", () => { hoja(null); saltar(s); }); li.append(b); ul.append(li);
+    });
+  }
+  /* Saltar es instantáneo y siempre lo pide quien usa la página: la cámara nunca camina sola */
+  function colocar(s) {
+    if (planos[s.nivel] && s.nivel !== T.nivel) usaPlano(s.nivel);
+    T.x = s.x; T.z = s.z; T.py = (planos[s.nivel] ? planos[s.nivel].floorY : T.py); T.vx = T.vz = 0;
+    const g = sueloEn(T.x, T.py + .2, T.z); if (g !== null) T.py = g;
+    T.sala = -1; hudSala();
+  }
+  function saltar(s) {
+    if (calmo) { colocar(s); return; }
+    $("velo").style.opacity = 1;
+    setTimeout(() => { colocar(s); $("velo").style.opacity = 0; }, 170);
+  }
+  function saltaSala(d) { if (salas.length) saltar(salas[T.sala < 0 ? 0 : (T.sala + d + salas.length) % salas.length]); }
+
+  async function reconstruir() {
+    await estado("Calculando suelos, paredes y habitaciones");
+    const tris = triangulos(raiz);
+    T.nubes = !tris.length;
+    if (T.nubes) { C = null; planos = []; const b = new THREE.Box3().setFromObject(raiz); cajaM = [b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z]; }
+    else { const a = await calcular(tris); C = a.bvh; planos = a.planos; cajaM = a.caja; if (cfg.techo && planos[0]) planos[0].ceilH = cfg.techo; }
+    const [ax, ay, az, bx, by, bz] = cajaM, ex = bx - ax, ez = bz - az, mx = Math.max(ex, by - ay, ez);
+    T.libre = T.nubes; T.virtual = !planos.length; T.sueloV = ay;
+    planos.forEach(q => q.caja = null);
+    T.centro.set((ax + bx) / 2, ay + Math.min(1, (by - ay) * .3), (az + bz) / 2); T.radio = Math.max(ex, ez) * 1.05 + 2;
+    if (planos.length) {
+      nombrar();
+      /* Empieza en la planta con más superficie transitable */
+      const tope = Math.max(...planos.map(q => q.libre)); let m = planos.findIndex(q => q.libre >= tope * .3); if (cfg.spawn) m = 0;
+      usaPlano(m);
+      const s = cfg.spawn || salas.filter(q => q.nivel === m).sort((a, b) => b.area - a.area)[0];
+      T.x = s.x; T.z = s.z; T.yaw = s.yaw || 0; T.py = P.floorY;
+      const g = sueloEn(T.x, T.py + .2, T.z); if (g !== null) T.py = g;
+      if (!cfg.spawn) { let lejos = -1; for (let i = 0; i < 24; i++) { const an = i / 24 * 6.28318, d = Math.min(30, rayo(T.x, T.py + T.eye, T.z, -Math.sin(an), 0, -Math.cos(an), 60)); if (d > lejos) { lejos = d; T.yaw = an; } } }
+    } else {
+      salas = []; P = null;
+      T.x = (ax + bx) / 2; T.z = bz + Math.max(1.6, mx * .55); T.yaw = 0; T.py = ay;
+      if (T.nubes) { T.py = ay; T.z = (az + bz) / 2 + ez * .25; }
+    }
+    T.pitch = 0; T.vx = T.vz = 0; T.sala = -1;
+    $("navSala").hidden = !salas.length; $("mini").hidden = !planos.length; $("etiPlanta").hidden = planos.length < 2;
+    lista(); hudSala();
+  }
+
+  /* ---------- Cámara y modos ---------- */
+  function posOrbita(t) {
+    const R = T.radio * T.zoom / Math.min(1, camera.aspect / 1.2);
+    return t.set(T.centro.x + Math.sin(T.orbit) * Math.cos(T.elev) * R, T.centro.y + Math.sin(T.elev) * R, T.centro.z + Math.cos(T.orbit) * Math.cos(T.elev) * R);
+  }
+  const clipMaq = () => P ? P.floorY + Math.min(2.25, P.ceilH - .35) : 1000;
+  function volar(aPos, aQuat, aClip, fin, dur = 1.3) {
+    if (calmo) { camera.position.copy(aPos); camera.quaternion.copy(aQuat); T.clip = aClip; fin(); return; }
+    T.fly = { p0: camera.position.clone(), q0: camera.quaternion.clone(), c0: Math.min(T.clip, (P ? P.floorY : 0) + 14), p1: aPos.clone(), q1: aQuat.clone(), c1: aClip, t: 0, dur, fin };
+    T.modo = "vuelo";
+  }
+  function interfaz(modo) {
+    const d = modo !== "portada";
+    $("app").classList.toggle("dentro", d); $("portada").classList.toggle("fuera", d);
+    $("dock").hidden = !d; $("esq").hidden = !d;
+    $("mini").hidden = !d || modo === "orbita" || !planos.length;
+    $("etiPlanta").hidden = !d || planos.length < 2;
+    $("etiquetas").hidden = modo !== "orbita";
+    $("bMaq").setAttribute("aria-pressed", String(modo === "orbita"));
+    $("palanca").hidden = !(tactil && modo === "andar");
+    if (d) fondo.parar(); else fondo.seguir();
+  }
+  function comenzar() {
+    /* Tras cargar se entra directamente, sin vuelos ni demoras */
+    T.brillo = 1; aplicaBrillo();
+    T.modo = "andar"; T.clip = 1000; T.teclas = {}; T.fov = T.fovO = 72; camera.fov = 72; camera.updateProjectionMatrix();
+    scene.background.copy(T.muestra ? BLANCO : FONDO); U.uW.value = T.muestra ? 1 : 0;
+    interfaz("andar"); ocupado(false); pista();
+    $("vista").focus({ preventScroll: true });
+  }
+  let pistaT = 0;
+  function pista() {
+    const el = $("pista");
+    el.textContent = tactil ? "Mueve el círculo para andar. Arrastra para mirar." : "W A S D para andar. Haz clic para mirar con el ratón. Esc para soltarlo.";
+    el.style.opacity = 1; el.hidden = false; clearTimeout(pistaT);
+    pistaT = setTimeout(() => { el.style.opacity = 0; pistaT = setTimeout(() => el.hidden = true, 900); }, 6000);
+  }
+  function entrar() {
+    if (T.modo === "andar") return;
+    interfaz("andar");
+    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(T.pitch, T.yaw, 0, "YXZ"));
+    volar(new THREE.Vector3(T.x, T.py + T.eye, T.z), q, (P ? P.floorY + P.ceilH : 0) + 3, () => { T.modo = "andar"; T.clip = 1000; hudSala(); });
+  }
+  function maqueta() {
+    if (document.pointerLockElement) document.exitPointerLock();
+    T.zoom = 1; interfaz("orbita");
+    const m = new THREE.Matrix4(), to = posOrbita(new THREE.Vector3()); m.lookAt(to, T.centro, new THREE.Vector3(0, 1, 0));
+    volar(to, new THREE.Quaternion().setFromRotationMatrix(m), clipMaq(), () => { T.modo = "orbita"; T.clip = clipMaq(); });
+  }
+  function irPortada() {
+    if (document.pointerLockElement) document.exitPointerLock();
+    T.modo = "portada"; T.fly = null; interfaz("portada"); hoja(null); $("portada").classList.remove("fuera"); $("pista").hidden = true; $("aviso").hidden = true; $("palanca").hidden = true;
+  }
+  function medir() {
+    const w = $("vista").clientWidth, h = $("vista").clientHeight;
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); renderer.setSize(w, h, false);
+    camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
+  }
+  addEventListener("resize", medir);
+
+  /* ---------- Entrada ---------- */
+  const vista = $("vista"), dedos = new Map();
+  const soltarTodo = () => { T.teclas = {}; T.vx = T.vz = 0; };
+  addEventListener("blur", soltarTodo);
+  document.addEventListener("visibilitychange", soltarTodo);
+  document.addEventListener("pointerlockchange", () => { if (!document.pointerLockElement) soltarTodo(); });
+  function mira(dx, dy, k) {
+    if (T.modo === "andar") { const f = k * T.fov / 72; T.yaw += dx * f; T.pitch = Math.max(-1.4, Math.min(1.4, T.pitch + dy * f)); }
+    else if (T.modo === "orbita") { T.orbit -= dx * .005; T.elev = Math.max(.25, Math.min(1.5, T.elev + dy * .004)); }
+  }
+  document.addEventListener("mousemove", e => { if (document.pointerLockElement === vista) mira(-e.movementX, -e.movementY, .0022); });
+  vista.addEventListener("pointerdown", e => {
+    vista.focus({ preventScroll: true });
+    if ($("mini").classList.contains("grande")) plano(false);
+    if (!$("hoja").hidden) hoja(null);
+    const q = vista.getBoundingClientRect(), mando = e.pointerType === "touch" && T.modo === "andar" && e.clientX - q.left < q.width * .45 && e.clientY - q.top > q.height * .5 && T.joy.id === null;
+    if (mando) { T.joy.id = e.pointerId; T.joy.ox = e.clientX; T.joy.oy = e.clientY; }
+    else dedos.set(e.pointerId, { x: e.clientX, y: e.clientY, m: 0, t: performance.now() });
+    try { vista.setPointerCapture(e.pointerId); } catch (x) {}
+    if (dedos.size === 1) vista.classList.add("arrastra");
+  });
+  vista.addEventListener("pointermove", e => {
+    if (e.pointerId === T.joy.id) {
+      const dx = e.clientX - T.joy.ox, dy = e.clientY - T.joy.oy, l = Math.min(1, Math.hypot(dx, dy) / 46), a = Math.atan2(dy, dx);
+      T.joy.x = Math.cos(a) * l; T.joy.y = Math.sin(a) * l; $("pomo").style.transform = `translate(${T.joy.x * 32}px,${T.joy.y * 32}px)`; return;
+    }
+    const p = dedos.get(e.pointerId); if (!p || document.pointerLockElement === vista) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY; p.m += Math.abs(dx) + Math.abs(dy);
+    mira(dx, dy, .0034);
+  });
+  function suelta(e) {
+    if (e.pointerId === T.joy.id) { T.joy.id = null; T.joy.x = T.joy.y = 0; $("pomo").style.transform = ""; return; }
+    const p = dedos.get(e.pointerId); dedos.delete(e.pointerId); vista.classList.remove("arrastra");
+    if (p && e.type === "pointerup" && e.pointerType === "mouse" && p.m < 6 && performance.now() - p.t < 350 && T.modo === "andar" && document.pointerLockElement !== vista) { try { const q = vista.requestPointerLock(); if (q && q.catch) q.catch(() => {}); } catch (x) {} }
+  }
+  vista.addEventListener("pointerup", suelta); vista.addEventListener("pointercancel", suelta);
+  vista.addEventListener("wheel", e => {
+    e.preventDefault();
+    if (T.modo === "andar") T.fovO = Math.max(38, Math.min(84, T.fovO + e.deltaY * .03));
+    else if (T.modo === "orbita") T.zoom = Math.max(.35, Math.min(2, T.zoom * (1 + e.deltaY * .001)));
+  }, { passive: false });
+  document.addEventListener("keydown", e => {
+    if (e.target.type === "text") return;
+    T.teclas[e.code] = true;
+    if (e.repeat || T.modo === "portada") return;
+    if (e.code === "KeyM") $("bMaq").click();
+    if (e.code === "KeyP") $("bPla").click();
+    if (e.code === "KeyF") alternaLibre();
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code) && e.target.tagName !== "BUTTON") e.preventDefault();
+  });
+  document.addEventListener("keyup", e => T.teclas[e.code] = false);
+  function alternaLibre() {
+    T.libre = !T.libre; aviso(T.libre ? "Paso libre: atraviesas paredes. Q y E suben y bajan." : "Colisiones activadas.");
+    if (!T.libre && !T.nubes) { const g = sueloEn(T.x, T.py + 1, T.z); if (g !== null) T.py = g; }
+    const b = $("bLibre"); if (b) b.setAttribute("aria-pressed", String(T.libre));
+  }
+
+  $("ant").addEventListener("click", () => saltaSala(-1));
+  $("sig").addEventListener("click", () => saltaSala(1));
+  $("esq").addEventListener("click", irPortada);
+  $("bMaq").addEventListener("click", () => { if (T.modo === "orbita") entrar(); else if (T.modo === "andar") { plano(false); hoja(null); maqueta(); } });
+  function plano(on) { $("mini").classList.toggle("grande", on); $("bPla").setAttribute("aria-pressed", String(on)); }
+  $("bPla").addEventListener("click", () => {
+    if (!planos.length) { aviso("Este modelo no tiene suelo reconocible, así que no hay plano."); return; }
+    if (T.modo !== "andar") entrar(); plano(!$("mini").classList.contains("grande")); hoja(null);
+  });
+  function hoja(tipo) {
+    const h = $("hoja"), mismo = h.dataset.tipo === tipo && !h.hidden;
+    $("bAju").setAttribute("aria-pressed", "false");
+    if (!tipo || mismo) { h.hidden = true; h.dataset.tipo = ""; return; }
+    h.dataset.tipo = tipo; h.textContent = ""; h.hidden = false;
+    if (tipo === "salas") {
+      const ul = document.createElement("ul"); ul.id = "lista"; h.append(ul); lista();
+      if (!T.muestra) {
+        const d = document.createElement("div"); d.className = "ajuste"; d.innerHTML = '<label for="renombrar">Nombre de esta estancia</label><input id="renombrar" type="text" maxlength="40" autocomplete="off">'; h.append(d);
+        const i = d.querySelector("input"); i.value = T.sala >= 0 ? salas[T.sala].nombre : ""; i.addEventListener("change", () => renombrar(i.value.trim()));
+      }
+      return;
+    }
+    $("bAju").setAttribute("aria-pressed", "true");
+    const esc = T.muestra ? "" : `<div class="ajuste"><span><label for="escala">Tamaño</label><output id="vEsc" class="dato">× ${fmt(T.auto * T.scale, 3)}</output></span><input id="escala" type="range" min="0.2" max="3" step="0.01" value="${T.scale}"></div>`;
+    h.innerHTML = `${esc}<div class="ajuste"><span><label for="brillo">Brillo</label><output id="vBri" class="dato">${fmt(T.brillo)}</output></span><input id="brillo" type="range" min="0.4" max="2.5" step="0.01" value="${T.brillo}"></div><div class="ajuste"><span><label for="ojos">Altura de los ojos</label><output id="vOjo" class="dato">${fmt(T.eye)} m</output></span><input id="ojos" type="range" min="1.2" max="1.9" step="0.01" value="${T.eye}"></div>
+      <div class="fila"><button id="bLibre" class="tool" type="button" aria-pressed="${T.libre}">Atravesar paredes</button>${T.muestra ? "" : '<button id="girar" class="tool" type="button">Girar 90°</button><button id="copiar" class="tool" type="button">Copiar ajustes</button>'}<label class="tool" for="archivo" style="cursor:pointer">Cargar otro</label></div>`;
+    $("bLibre").addEventListener("click", alternaLibre);
+    $("brillo").addEventListener("input", e => { T.brillo = +e.target.value; $("vBri").textContent = fmt(T.brillo); aplicaBrillo(); });
+    $("ojos").addEventListener("input", e => { T.eye = +e.target.value; $("vOjo").textContent = fmt(T.eye) + " m"; });
+    if (!T.muestra) {
+      $("escala").addEventListener("input", e => $("vEsc").textContent = "× " + fmt(T.auto * e.target.value, 3));
+      $("escala").addEventListener("change", e => { T.scale = +e.target.value; ajustar(); });
+      $("girar").addEventListener("click", () => { T.tilt = (T.tilt + 1) % 4; ajustar(); });
+      $("copiar").addEventListener("click", copiar);
+    }
+  }
+  $("salaBtn").addEventListener("click", () => hoja("salas"));
+  $("bAju").addEventListener("click", () => hoja("ajustes"));
+  function aplicaBrillo() {
+    renderer.toneMappingExposure = (T.muestra ? EXPO_CASA : 1) * T.brillo;
+    if (!T.muestra) raiz.traverse(o => { if (o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m.isMeshBasicMaterial && m.map) m.color.setScalar(T.brillo); }); });
+  }
+  function renombrar(v) {
+    if (!v || !P) return;
+    const k = "pc:nombres:" + cfg.name, rg = P.region[celda(T.x, T.z)], arr = (guarda.leer(k) || []).filter(q => { const c = celda(q.x, q.z); return !((q.nivel || 0) === T.nivel && c >= 0 && P.region[c] === rg); });
+    arr.push({ name: v, x: +T.x.toFixed(2), z: +T.z.toFixed(2), nivel: T.nivel }); guarda.poner(k, arr);
+    nombrar(); T.sala = -1; hudSala(); lista(); aviso("Nombre guardado en este navegador.");
+  }
+  function copiar() {
+    const datos = JSON.stringify({ scale: +(T.auto * T.scale).toFixed(4), tilt: T.tilt, eye: T.eye, rooms: [...(cfg.rooms || []), ...(guarda.leer("pc:nombres:" + cfg.name) || [])], spawn: { x: +T.x.toFixed(2), z: +T.z.toFixed(2), yaw: +T.yaw.toFixed(2) } });
+    const ok = navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(datos) : Promise.reject();
+    ok.then(() => aviso("Ajustes copiados."), () => aviso("El navegador no permite copiar aquí. Ajustes: " + datos));
+  }
+  async function ajustar() {
+    if (!T.modelo || T.muestra) return;
+    T.modelo.scale.setScalar(T.auto * T.scale); T.modelo.rotation.x += T.tiltPrev === T.tilt ? 0 : Math.PI / 2; T.tiltPrev = T.tilt;
+    await reconstruir(); interfaz("andar"); T.modo = "andar"; aviso("Modelo actualizado.");
+  }
+  const mapa = $("mapa"), mctx = mapa.getContext("2d"); let enc = null;
+  mapa.addEventListener("click", e => {
+    if (!enc || !P) return;
+    if (!$("mini").classList.contains("grande")) { plano(true); return; }
+    const q = mapa.getBoundingClientRect(), x = (e.clientX - q.left - enc.ox) / enc.s + P.caja.xa, z = (e.clientY - q.top - enc.oz) / enc.s + P.caja.za;
+    plano(false);
+    const k = celda(x, z);
+    if (k >= 0 && P.free[k]) saltar({ x, z, nivel: T.nivel });
+    else { const rg = k >= 0 ? P.region[k] : -1; if (rg >= 0) saltar(salas[P.salaDe[rg]]); else aviso("Pulsa dentro de una estancia."); }
+  });
+  function dibujaMapa() {
+    if (!P || !P.caja || $("mini").hidden) return;
+    const dpr = Math.min(devicePixelRatio || 1, 2), q = mapa.getBoundingClientRect(); if (!q.width) return;
+    const W = Math.round(q.width * dpr), H = Math.round(q.height * dpr); if (mapa.width !== W || mapa.height !== H) { mapa.width = W; mapa.height = H; }
+    const c = P.caja, bw = c.xb - c.xa, bh = c.zb - c.za, pad = q.width > 200 ? 28 : 10, s = Math.min((q.width - pad * 2) / bw, (q.height - pad * 2) / bh), ox = (q.width - bw * s) / 2, oz = (q.height - bh * s) / 2; enc = { s, ox, oz };
+    const X = x => ox + (x - c.xa) * s, Z = z => oz + (z - c.za) * s;
+    mctx.setTransform(dpr, 0, 0, dpr, 0, 0); mctx.clearRect(0, 0, q.width, q.height); mctx.imageSmoothingEnabled = true;
+    mctx.drawImage(lienzo, X(P.ox), Z(P.oz), P.w * P.cell * s, P.h * P.cell * s);
+    if (q.width > 240) { mctx.font = "400 12px Geist, Arial, sans-serif"; mctx.textAlign = "center"; mctx.fillStyle = "#ecece8"; salas.filter(r => r.nivel === T.nivel).forEach(r => mctx.fillText(r.nombre, X(r.x), Z(r.z))); }
+    mctx.save(); mctx.translate(X(T.x), Z(T.z)); mctx.rotate(-T.yaw);
+    const g = mctx.createRadialGradient(0, 0, 0, 0, 0, 30); g.addColorStop(0, "rgba(255,255,255,.34)"); g.addColorStop(1, "rgba(255,255,255,0)");
+    mctx.fillStyle = g; mctx.beginPath(); mctx.moveTo(0, 0); mctx.arc(0, 0, 30, -Math.PI / 2 - .6, -Math.PI / 2 + .6); mctx.fill();
+    mctx.fillStyle = "#fff"; mctx.beginPath(); mctx.arc(0, 0, 3.4, 0, 7); mctx.fill(); mctx.restore();
+  }
+
+  /* ---------- Carga ---------- */
+  function vaciar() {
+    raiz.traverse(o => { if (!o.isMesh && !o.isPoints) return; o.geometry.dispose(); (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m && m.dispose()); });
+    raiz.clear(); raiz.scale.setScalar(1); raiz.rotation.set(0, 0, 0);
+  }
+  async function cargar(archivos) {
+    ocupado(true);
+    try {
+      await estado("Leyendo " + (archivos.length === 1 ? archivos[0].name : archivos.length + " archivos"));
+      const { tabla, modelos } = await recoger(archivos);
+      const raro = [...tabla.keys()].map(ext).find(x => ["usdz", "usd", "blend", "skp", "3dm", "c4d", "max", "ma", "mb", "dwg", "rvt", "ifc", "step", "stp"].includes(x));
+      if (!modelos.length && raro) throw new Error(`Este visor no puede abrir .${raro} en el navegador. Expórtalo como GLB, FBX u OBJ desde tu programa o desde Polycam.`);
+      if (!modelos.length) throw new Error("No encuentro ningún modelo 3D. Formatos admitidos: GLB, GLTF, OBJ, FBX, DAE, PLY, STL, 3DS, 3MF, AMF, PCD, XYZ o un ZIP con ellos.");
+      const prio = FORMATOS.find(e => modelos.some(m => m.e === e)), elegidos = modelos.filter(m => m.e === prio);
+      await preparaTGA(tabla);
+      const faltan = new Set(), grupo = new THREE.Group();
+      for (const m of elegidos) { await estado("Construyendo " + m.nombre); grupo.add(await leeModelo(m, tabla, faltan)); }
+      await esperaTexturas();
+      await instalar(grupo, prio, elegidos[0].nombre.replace(/\.[^.]+$/, ""), {});
+      if (faltan.size) aviso(faltan.size === 1 ? "Falta 1 textura. Súbela junto al modelo o en un ZIP para verla." : `Faltan ${faltan.size} texturas. Súbelas junto al modelo o en un ZIP para verlas.`);
+    } catch (e) { console.error(e); fallo(motivo(e)); }
+  }
+  const esperaTexturas = () => new Promise(r => setTimeout(r, 60));
+  function motivo(e) { const m = String(e && e.message || e); if (/version number|not supported|Unexpected token|magic/i.test(m)) return "El archivo está dañado o usa una versión que el visor no reconoce. Expórtalo de nuevo o prueba con GLB."; return /^(Falta|No |Este|El ZIP)/.test(m) ? m : "No he podido abrir el modelo: " + m; }
+  async function instalar(grupo, e, nombre, op) {
+    await estado("Preparando materiales");
+    vaciar(); T.muestra = false; T.nombre = nombre; cfg = { name: nombre, rooms: op.rooms || [], spawn: op.spawn || null };
+    const { env } = acabado(grupo);
+    if (env) await entorno();
+    raiz.add(grupo); T.modelo = grupo; T.scale = 1; T.tilt = 0; T.tiltPrev = 0;
+    orientar(grupo, e);
+    T.auto = op.scale || escalar(grupo); grupo.scale.setScalar(T.auto);
+    await reconstruir();
+    comenzar();
+    if (T.nubes) aviso("Nube de puntos: no tiene superficies para pisar, así que te mueves libremente. Q y E suben y bajan.");
+    else if (T.virtual) aviso("No detecto un suelo: he añadido uno invisible para que puedas rodear el modelo.");
+  }
+  $("archivo").addEventListener("change", e => { const f = [...e.target.files]; e.target.value = ""; if (f.length) { hoja(null); irPortada(); cargar(f); } });
+  async function deEntrada(ent, ruta = "") {
+    if (ent.isFile) return [await new Promise((o, n) => ent.file(o, n))];
+    const lect = ent.createReader(); let todo = [], lote;
+    do { lote = await new Promise((o, n) => lect.readEntries(o, n)); todo.push(...lote); } while (lote.length);
+    return (await Promise.all(todo.map(x => deEntrada(x)))).flat();
+  }
+  let arr = 0;
+  addEventListener("dragenter", e => { e.preventDefault(); arr++; $("suelta").hidden = false; });
+  addEventListener("dragleave", () => { if (--arr <= 0) { arr = 0; $("suelta").hidden = true; } });
+  addEventListener("dragover", e => e.preventDefault());
+  addEventListener("drop", async e => {
+    e.preventDefault(); arr = 0; $("suelta").hidden = true;
+    const it = [...(e.dataTransfer.items || [])].map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+    let f = []; if (it.length) f = (await Promise.all(it.map(x => deEntrada(x)))).flat(); else f = [...e.dataTransfer.files];
+    if (f.length) { hoja(null); irPortada(); cargar(f); }
+  });
+  $("muestra").addEventListener("click", async () => {
+    ocupado(true);
+    try {
+      await estado("Preparando la casa");
+      const luz = await new Promise((ok, no) => new THREE.TextureLoader().load("luz.png", t => { t.flipY = false; t.encoding = THREE.sRGBEncoding; t.generateMipmaps = false; t.minFilter = t.magFilter = THREE.LinearFilter; t.needsUpdate = true; ok(t); }, undefined, () => no(new Error("No se ha podido cargar la iluminación de la casa."))));
+      vaciar(); T.muestra = true; T.auto = 1; T.scale = 1; cfg = construirCasa(luz); T.modelo = raiz;
+      await reconstruir();
+      comenzar();
+    } catch (e) { console.error(e); fallo(motivo(e)); }
+  });
+
+  /* ---------- Bucle ---------- */
+  function andar(dt) {
+    let f = 0, s = 0, u = 0; const k = T.teclas;
+    if (k.KeyW || k.ArrowUp) f += 1; if (k.KeyS || k.ArrowDown) f -= 1; if (k.KeyD) s += 1; if (k.KeyA) s -= 1; if (k.KeyE) u += 1; if (k.KeyQ) u -= 1;
+    if (k.ArrowLeft) T.yaw += 1.6 * dt; if (k.ArrowRight) T.yaw -= 1.6 * dt;
+    f -= T.joy.y; s += T.joy.x;
+    let wx = 0, wz = 0;
+    if (f || s) { const l = Math.max(1, Math.hypot(f, s)), sy = Math.sin(T.yaw), cy = Math.cos(T.yaw), vel = (k.ShiftLeft || k.ShiftRight ? 3.4 : 1.9) * (T.libre ? 1.6 : 1); wx = (-sy * f + cy * s) / l * vel; wz = (-cy * f - sy * s) / l * vel; }
+    const a = 1 - Math.exp(-dt * 12); T.vx += (wx - T.vx) * a; T.vz += (wz - T.vz) * a;
+    if (Math.abs(T.vx) < .01 && !wx) T.vx = 0; if (Math.abs(T.vz) < .01 && !wz) T.vz = 0;
+    let nx = T.x + T.vx * dt, nz = T.z + T.vz * dt;
+    if (T.libre) {
+      if (T.pitch && (f || s) && !T.nubes) {}
+      T.x = nx; T.z = nz; T.py += u * 2.2 * dt;
+    } else if (T.vx || T.vz) {
+      const px = T.x, pz = T.z;
+      for (let it = 0; it < 2; it++) for (const h of [.5, 1.05, T.eye - .08]) for (let i = 0; i < 12; i++) {
+        const an = i / 12 * 6.28318, c = Math.cos(an), n = Math.sin(an), d = rayo(nx, T.py + h, nz, c, 0, n, RADIO);
+        if (d < RADIO && hN < .8) { nx -= c * (RADIO - d); nz -= n * (RADIO - d); }
+      }
+      const prueba = (x, z) => { const g = sueloEn(x, T.py, z); if (g === null || g > T.py + PASO) return false; T.x = x; T.z = z; return true; };
+      if (!prueba(nx, nz) && !prueba(nx, pz)) prueba(px, nz);
+      T.andado += Math.hypot(T.x - px, T.z - pz);
+    }
+    if (!T.libre) { const g = sueloEn(T.x, T.py, T.z); if (g !== null) { const dl = g - T.py; T.py += dl > 0 ? dl * (1 - Math.exp(-dt * 16)) : dl * (1 - Math.exp(-dt * 9)); } }
+    camera.position.set(T.x, T.py + T.eye, T.z); camera.rotation.set(T.pitch, T.yaw, 0);
+    if (Math.abs(T.fov - T.fovO) > .01) { T.fov += (T.fovO - T.fov) * (1 - Math.exp(-dt * 9)); camera.fov = T.fov; camera.updateProjectionMatrix(); }
+    if (planos.length > 1) { let m = 0; planos.forEach((q, i) => { if (T.py >= q.floorY - .6) m = i; }); if (m !== T.nivel) usaPlano(m); }
+    hudSala();
+  }
+  const v3 = new THREE.Vector3();
+  function ponEtiquetas() {
+    const q = $("vista").getBoundingClientRect();
+    salas.forEach((s, i) => { const vis = s.nivel === T.nivel; etiquetas[i].hidden = !vis; if (!vis) return; v3.set(s.x, P.floorY + .2, s.z).project(camera); etiquetas[i].style.transform = `translate(-50%,-50%) translate(${(v3.x + 1) / 2 * q.width}px,${(1 - v3.y) / 2 * q.height}px)`; });
+  }
+  let ult = performance.now(), tM = 0;
+  function tick(now) {
+    requestAnimationFrame(tick);
+    const dt = Math.min(.05, (now - ult) / 1000); ult = now;
+    if (T.modo === "portada") return;
+    if (!document.hasFocus() && Object.keys(T.teclas).length) soltarTodo();
+    if (T.modo === "andar") andar(dt);
+    else if (T.modo === "orbita") { posOrbita(camera.position); camera.lookAt(T.centro); ponEtiquetas(); }
+    else if (T.fly) {
+      const f = T.fly; f.t = Math.min(1, f.t + dt / f.dur);
+      const e = f.t < .5 ? 4 * f.t ** 3 : 1 - (-2 * f.t + 2) ** 3 / 2;
+      camera.position.lerpVectors(f.p0, f.p1, e); camera.quaternion.slerpQuaternions(f.q0, f.q1, e); T.clip = f.c0 + (f.c1 - f.c0) * e;
+      if (f.t >= 1) { T.fly = null; f.fin(); }
+    }
+    if (T.muestra) { const wO = $("etiquetas").hidden ? 1 : 0; if (Math.abs(U.uW.value - wO) > .001) { U.uW.value += (wO - U.uW.value) * (1 - Math.exp(-dt * 4)); scene.background.copy(NEGRO).lerp(BLANCO, U.uW.value); } }
+    if (now - tM > 33) { tM = now; dibujaMapa(); }
+    corte.constant = T.clip;
+    renderer.render(scene, camera);
+  }
+  medir(); requestAnimationFrame(tick);
+  if (CONFIG.modelUrl) (async () => {
+    ocupado(true);
+    try {
+      await estado("Descargando el escaneo");
+      const q = await fetch(CONFIG.modelUrl); if (!q.ok) throw new Error("No se ha encontrado " + CONFIG.modelUrl);
+      const d = new Uint8Array(await q.arrayBuffer()), e = ext(CONFIG.modelUrl), tabla = new Map([[nombreBase(CONFIG.modelUrl), d]]);
+      const g = new THREE.Group(); g.add(await leeModelo({ datos: d, e }, tabla, new Set()));
+      await instalar(g, e, CONFIG.modelName, CONFIG);
+    } catch (e) { fallo(motivo(e)); }
+  })();
+  if (location.hostname === "localhost") window.__p = { T, get P() { return P; }, get salas() { return salas; }, get planos() { return planos; }, get C() { return C; }, cargar, camera, rayo, andar, sueloEn };
+})();
+</script>
