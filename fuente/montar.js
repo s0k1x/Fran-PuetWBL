@@ -7,6 +7,7 @@ const out = f("web.html")
   .replace("/*__IA__*/", () => f("ia.js"))
   .replace("/*__NUBE__*/", () => f("nube.js"))
   .replace("/*__PORTADA__*/", () => f("portada.js"))
+  .replace("/*__PANEL__*/", () => f("panel.js"))
   .replace("/*__UNION__*/", () => f("union.js"))
   .replace("/*__LUZ__*/", () => "const LUZ = " + f("luz.json") + ";");
 const raiz = path.join(__dirname, "..");

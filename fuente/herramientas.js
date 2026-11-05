@@ -349,7 +349,8 @@
       if (H.fuentes) add("Archivo", "Guardar proyecto", "ZIP con modelo, puntos y muebles", exportaProyecto);
       add("Archivo", "Exportar GLB", "Convierte a GLB con texturas de 2048 px", exportaGLB);
     }
-    add("Archivo", "Ajustes", "Brillo, altura, tamaño y paso libre", () => hoja("ajustes"));
+    add("Archivo", "Ajustes del modelo", "Brillo, altura, tamaño y paso libre", () => hoja("ajustes"));
+    add("Archivo", "Preferencias", "Velocidad, sensibilidad, visión y calidad", () => { const f = $("ficha"); f.hidden = false; f.textContent = ""; panelAjustes(f); const x = texto("button", "tool"); x.type = "button"; x.textContent = "Cerrar"; x.onclick = () => f.hidden = true; f.append(x); });
     return it;
   }
   let selP = 0, itemsP = [];

@@ -45,6 +45,17 @@ Gemini lee el plano, nombra estancias, responde preguntas, hace inventario, prop
 
 Con Supabase usa `gemini-3.8-flash` y, si está saturado, pasa a `gemini-3.5-flash-lite` y `gemini-2.5-flash`. Con clave propia, el modelo se cambia en Herramientas, Conectar Gemini.
 
+## Modelo de la portada y casa de prueba
+
+Sube tu modelo a `modelos/`, por ejemplo `modelos/casa.zip` con el OBJ, el MTL y las texturas. Después edita `CONFIG` en `fuente/web.html` y en `index.html`:
+
+```js
+modeloPortada: "modelos/casa.zip",
+modeloPrueba: "modelos/casa.zip",
+```
+
+El recorrido del scroll se calcula solo con el tamaño y las habitaciones del modelo. Antes de fijarlo puedes probarlo en **Herramientas → Probar un modelo en esta portada**.
+
 ## Supabase
 
 La web ya apunta al proyecto de Supabase. Las claves de `CONFIG` son públicas por diseño: la seguridad la ponen las reglas de la base de datos.
