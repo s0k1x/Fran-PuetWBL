@@ -46,8 +46,8 @@
   const carga = { v: 0, fin: false };
   (function avanzaCarga() {
     if (carga.fin) return;
-    const listo = vista.classList.contains("lista"), meta = listo ? 100 : Math.min(92, carga.v + (R.pend > 0 ? .6 : .25) + (pf.capas || pf.eti.length ? 2 : 0));
-    carga.v += (meta - carga.v) * .08; $("carBar").style.width = carga.v.toFixed(1) + "%"; $("carPct").textContent = Math.round(carga.v) + " %";
+    const listo = vista.classList.contains("lista") || T.modo !== "portada", meta = listo ? 100 : Math.min(92, carga.v + (R.pend > 0 ? .6 : .25) + (pf.capas || pf.eti.length ? 2 : 0));
+    carga.v += (meta - carga.v) * (listo ? .3 : .08); if (listo && performance.now() - (carga.t || (carga.t = performance.now())) > 450) carga.v = 100; $("carBar").style.width = carga.v.toFixed(1) + "%"; $("carPct").textContent = Math.round(carga.v) + " %";
     if (listo && carga.v > 99) { carga.fin = true; $("cargador").classList.add("fuera"); arrancaPortada(); setTimeout(() => $("cargador").remove(), 1300); return; }
     requestAnimationFrame(avanzaCarga);
   })();

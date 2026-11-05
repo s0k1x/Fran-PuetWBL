@@ -90,13 +90,15 @@
   }
 
   /* ---------- Chat con acciones: se le pide y lo hace ---------- */
-  const ESQ_AG = { type: "object", properties: { respuesta: { type: "string" }, acciones: { type: "array", items: { type: "object", properties: { tipo: { type: "string", enum: ["ir_a", "ambiente", "luces", "vista", "color_suelo", "color_paredes", "colocar", "seccion", "foto"] }, valor: { type: "string" }, estancia: { type: "string" } }, required: ["tipo", "valor"] } } }, required: ["respuesta", "acciones"] };
-  const ayudaAg = () => `Puedes actuar devolviendo acciones. luces: encender, apagar o alternar las lámparas de la casa. ir_a: nombre exacto de una estancia. ambiente: ${Object.keys(AMB).join(", ")}. vista: maqueta, plano o caminar. color_suelo: ${Object.keys(TONOS.suelo).join(", ")}. color_paredes: ${Object.keys(TONOS.pared).join(", ")}. colocar: valor es ${Object.keys(CATALOGO).join(", ")}, y estancia es el nombre de la estancia. seccion (solo en la portada): 0 exterior, 1 sin techo, 2 interior, 4 plano, 5 piezas, 6 estancias. "De día" equivale a ambiente Natural. Nunca digas que has hecho algo que no esté en acciones. foto: guarda una imagen. Si no se pide actuar, deja acciones vacío.`;
+  const ESQ_AG = { type: "object", properties: { respuesta: { type: "string" }, acciones: { type: "array", items: { type: "object", properties: { tipo: { type: "string", enum: ["ir_a", "ambiente", "luces", "hora", "estilo", "vista", "color_suelo", "color_paredes", "colocar", "seccion", "foto"] }, valor: { type: "string" }, estancia: { type: "string" } }, required: ["tipo", "valor"] } } }, required: ["respuesta", "acciones"] };
+  const ayudaAg = () => `Puedes actuar devolviendo acciones. luces: encender, apagar o alternar las lámparas de la casa. hora: número de 6 a 23.75 con la hora del día (por ejemplo 20.5 son las 20:30). estilo: ${Object.keys(ESTILOS).join(", ")}. ir_a: nombre exacto de una estancia. ambiente: ${Object.keys(AMB).join(", ")}. vista: maqueta, plano o caminar. color_suelo: ${Object.keys(TONOS.suelo).join(", ")}. color_paredes: ${Object.keys(TONOS.pared).join(", ")}. colocar: valor es ${Object.keys(CATALOGO).join(", ")}, y estancia es el nombre de la estancia. seccion (solo en la portada): 0 exterior, 1 sin techo, 2 interior, 4 plano, 5 piezas, 6 estancias. "De día" equivale a ambiente Natural. Nunca digas que has hecho algo que no esté en acciones. foto: guarda una imagen. Si no se pide actuar, deja acciones vacío.`;
   function ejecuta2(lista) {
     const hechas = [];
     (lista || []).forEach(a => {
       const v = String(a.valor || "");
-      if (a.tipo === "luces") { const on = ponLuces(/apag|off|no/i.test(v) ? false : /alter|cambi/i.test(v) ? "alternar" : true); hechas.push(on ? "Luces encendidas" : "Luces apagadas"); }
+      if (a.tipo === "hora" && isFinite(parseFloat(v))) { ponHora(parseFloat(v)); hechas.push("Son las " + horaTxt(Aj.hora)); }
+      else if (a.tipo === "estilo" && ESTILOS[v] !== undefined) { eligeEstilo(v, T.modo !== "portada"); hechas.push("Estilo " + v); }
+      else if (a.tipo === "luces") { const on = ponLuces(/apag|off|no/i.test(v) ? false : /alter|cambi/i.test(v) ? "alternar" : true); hechas.push(on ? "Luces encendidas" : "Luces apagadas"); }
       else if (a.tipo === "ambiente" && AMB[v] !== undefined) { if (T.modo === "portada") { Aj.amb = v; aplicaAj(); } else { D.amb = v === "Natural" ? "" : v; guardaD(); aplicaAmb(); } hechas.push("Ambiente " + v); }
       else if (T.modo === "portada") { if (a.tipo === "seccion" && isFinite(+v)) { irSeccion(+v); hechas.push("Vista cambiada"); } else if (a.tipo === "vista" && { plano: 4, maqueta: 1 }[v] !== undefined) { irSeccion({ plano: 4, maqueta: 1 }[v]); hechas.push(v === "plano" ? "Plano" : "Maqueta"); } else if (a.tipo === "foto") { pf.foto = true; hechas.push("Foto guardada"); } }
       else if (a.tipo === "ir_a") { const s = salas.find(q => q.nombre.toLowerCase() === v.toLowerCase()); if (s) { saltar(s); hechas.push("En " + s.nombre); } }
@@ -113,6 +115,10 @@
     const q = " " + t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "") + " ", ac = [];
     const amb = [[/\bnoche\b|\boscur/, "Noche"], [/atardecer|puesta de sol/, "Atardecer"], [/amanecer/, "Amanecer"], [/\bde dia\b|\bdia\b|natural|\bluz normal/, "Natural"], [/blanco y negro|\bblanco\b/, "Blanco"]].find(x => x[0].test(q));
     const pideAmb = /ambiente|\bpon\b|\bponlo\b|\bponla\b|\bhaz\b|\bcambia\b|\bque sea\b|\bmodo\b/.test(q) || q.trim().split(" ").length <= 2;
+    const hm = q.match(/\b(?:a las|hora|las)\s+(\d{1,2})(?:[:.,h](\d{2}))?(?:\s+de la\s+(manana|tarde|noche))?\b/);
+    if (hm && +hm[1] <= 23 && (/\ba las\b|\bhora\b/.test(hm[0]) || hm[3])) { let hh = +hm[1] + (hm[2] ? +hm[2] / 60 : 0); if (/tarde|noche/.test(hm[3] || "") && hh < 12) hh += 12; ac.push({ tipo: "hora", valor: String(hh) }); }
+    const est = Object.keys(ESTILOS).find(k => q.includes(" " + k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")));
+    if (est && /estilo|decora|pon|ponla|cambia|hazla/.test(q)) ac.push({ tipo: "estilo", valor: est });
     const luz = /\bluz\b|\bluces\b|lampara|lamparas|focos/.test(q);
     if (luz && /apaga|quita|sin luz|oscuras/.test(q)) ac.push({ tipo: "luces", valor: "apagar" });
     else if (luz && /encien|enciend|prende|pon|activa|da la/.test(q)) ac.push({ tipo: "luces", valor: "encender" });
@@ -165,7 +171,7 @@
       const d = await geminiImagen([{ role: "user", parts: [parteImagen(antes), { text: `Redecora esta estancia con este estilo: ${estilo}. Mantén la misma arquitectura, ventanas, puertas y encuadre. Cambia solo acabados, muebles y decoración. Resultado fotorrealista.` }] }]);
       f.hidden = false; f.textContent = ""; const h = texto("h3"), a = texto("img"), b = texto("img"), n = texto("p", "nota2"), url = `data:${d.mime};base64,${d.data}`; h.textContent = "Propuesta"; b.src = url; b.alt = "Propuesta redecorada"; a.src = antes; a.alt = "Vista original"; n.textContent = "Imagen orientativa creada por IA. No es una medición ni un proyecto.";
       const bin = atob(d.data), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
-      const fi = texto("div", "fila"), g = texto("button", "tool"), x = texto("button", "tool"), o = texto("button", "tool"); g.type = x.type = o.type = "button"; g.textContent = "Guardar"; o.textContent = "Ver original"; x.textContent = "Cerrar"; let org = false; o.onclick = () => { org = !org; b.src = org ? antes : url; o.textContent = org ? "Ver propuesta" : "Ver original"; }; g.onclick = () => guardar(new Blob([u], { type: d.mime }), `redecorado.${d.mime.includes("png") ? "png" : "jpg"}`); x.onclick = () => f.hidden = true; fi.append(g, o, x); f.append(h, b, n, fi);
+      const fi = texto("div", "fila"), g = texto("button", "tool"), x = texto("button", "tool"), o = texto("button", "tool"); g.type = x.type = o.type = "button"; g.textContent = "Guardar"; o.textContent = "Ver original"; x.textContent = "Cerrar"; let org = false; o.onclick = () => { org = !org; b.src = org ? antes : url; o.textContent = org ? "Ver propuesta" : "Ver original"; }; g.onclick = () => guardar(new Blob([u], { type: d.mime }), `redecorado.${d.mime.includes("png") ? "png" : "jpg"}`); x.onclick = () => f.hidden = true; fi.append(g, x); f.append(h, comparador(antes, url), n, fi);
     } catch (e) { aviso(e.message); }
   }
   async function informeIA() {

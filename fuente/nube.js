@@ -30,6 +30,8 @@
         <div class="perfil"><span class="avatar">${ini}</span><div><b></b><span></span></div></div>
         <div class="menuL">
           <button type="button" data-a="pro">${ico("carpeta")}Mis proyectos<small>Publicados</small></button>
+          <button type="button" data-a="pan">${ico("grafico")}Panel del propietario<small>Visitas</small></button>
+          <button type="button" data-a="gal">${ico("galeria")}Galería</button>
           <button type="button" data-a="pub">${ico("subir")}Publicar este modelo<small>Enlace</small></button>
           <button type="button" data-a="sol">${ico("correo")}Notificaciones<small>Visitas</small></button>
           <button type="button" data-a="apa">${ico("sol")}Apariencia<small>Luz y calidad</small></button>
@@ -40,6 +42,7 @@
       A.querySelector(".x").onclick = cerrar;
       const ir = (k, f) => A.querySelector(`[data-a="${k}"]`).onclick = f;
       ir("pro", () => { cerrar(); misProyectos(); });
+      ir("pan", () => { cerrar(); panelDueno(); }); ir("gal", () => { cerrar(); galeria(); });
       ir("pub", () => { cerrar(); if (T.modo === "portada") aviso("Abre un modelo para publicarlo."); else publicar(); });
       ir("sol", () => { cerrar(); solicitudesNube(); });
       ir("apa", () => { cerrar(); if (T.modo === "portada") abrePanel("aju", BOTONES.aju); else { const f = $("ficha"); f.hidden = false; f.textContent = ""; panelAjustes(f); } });
@@ -127,6 +130,8 @@
     e["planta.json"] = new TextEncoder().encode(JSON.stringify(datosProyecto()));
     return new Blob([fflate.zipSync(e, { level: 6 })], { type: "application/zip" });
   }
+  /* Portada del proyecto para la galería: la vista actual en pequeño */
+  const miniatura = () => { try { return vistaJPEG(560); } catch (e) { return null; } };
   async function publicar() {
     if (!usuario) { cuenta2(publicar); return; }
     aviso("Preparando el modelo…");
@@ -135,12 +140,12 @@
       aviso("Subiendo el modelo…");
       if (esDueno()) {
         const { error } = await nube.storage.from("modelos").upload(H.proyecto.ruta, b, { upsert: true, contentType: "application/zip" }); if (error) throw error;
-        const u = await nube.from("proyectos").update({ tamano: b.size, datos: D }).eq("id", H.proyecto.id); if (u.error) throw u.error;
+        const u = await nube.from("proyectos").update({ tamano: b.size, datos: D, miniatura: miniatura(), actualizado: new Date().toISOString() }).eq("id", H.proyecto.id); if (u.error) throw u.error;
         copia(enlaceDe(H.proyecto.slug), "Publicación actualizada. Enlace copiado."); return;
       }
       const slug = Array.from(crypto.getRandomValues(new Uint8Array(8))).map(v => "abcdefghijkmnpqrstuvwxyz23456789"[v % 32]).join(""), ruta = `${usuario.id}/${slug}.zip`;
       const s = await nube.storage.from("modelos").upload(ruta, b, { contentType: "application/zip" }); if (s.error) throw s.error;
-      const r = await nube.from("proyectos").insert({ nombre: (T.nombre || "Modelo").slice(0, 120), slug, ruta, tamano: b.size, datos: D, publico: true }).select().single();
+      const r = await nube.from("proyectos").insert({ nombre: (T.nombre || "Modelo").slice(0, 120), slug, ruta, tamano: b.size, datos: D, publico: true, miniatura: miniatura() }).select().single();
       if (r.error) { await nube.storage.from("modelos").remove([ruta]); throw r.error; }
       H.proyecto = r.data; try { history.replaceState(null, "", enlaceDe(slug)); } catch (e) {}
       copia(enlaceDe(slug), "Publicado. Enlace copiado.");
@@ -163,13 +168,13 @@
   }
   async function misProyectos() {
     if (!usuario) { cuenta2(misProyectos); return; }
-    const { data, error } = await nube.from("proyectos").select("id,nombre,slug,publico,ruta,tamano,creado").eq("owner", usuario.id).order("creado", { ascending: false }).limit(50);
+    const { data, error } = await nube.from("proyectos").select("id,nombre,slug,publico,en_galeria,ruta,tamano,creado").eq("owner", usuario.id).order("creado", { ascending: false }).limit(50);
     if (error) { aviso("No se han podido cargar tus proyectos."); return; }
     const f = $("ficha"); f.textContent = ""; f.hidden = false; const h = texto("h3"); h.textContent = "Mis proyectos"; f.append(h);
     if (!data.length) { const p = texto("p"); p.textContent = "Aún no has publicado ningún modelo."; f.append(p); }
     data.forEach(p => {
       const d = texto("div", "ajuste"), n = texto("span"), e = texto("span", "dato"); n.textContent = p.nombre; e.textContent = `${fmt(p.tamano / 1048576, 1)} MB · ${p.publico ? "público" : "privado"}`; d.append(n, e);
-      const fi = fila(["Abrir", () => { cierraFicha(); try { history.replaceState(null, "", enlaceDe(p.slug)); } catch (x) {} irPortada(); abreProyecto(p.slug); }], ["Copiar enlace", () => copia(enlaceDe(p.slug), "Enlace copiado.")], [p.publico ? "Hacer privado" : "Hacer público", async () => { const { error } = await nube.from("proyectos").update({ publico: !p.publico }).eq("id", p.id); if (error) aviso("No se ha podido cambiar."); else misProyectos(); }], ["Borrar", null]);
+      const fi = fila(["Abrir", () => { cierraFicha(); try { history.replaceState(null, "", enlaceDe(p.slug)); } catch (x) {} irPortada(); abreProyecto(p.slug); }], ["Copiar enlace", () => copia(enlaceDe(p.slug), "Enlace copiado.")], [p.en_galeria ? "Quitar de la galería" : "Mostrar en la galería", async () => { const { error } = await nube.from("proyectos").update({ en_galeria: !p.en_galeria, publico: true }).eq("id", p.id); if (error) aviso("No se ha podido cambiar."); else misProyectos(); }], [p.publico ? "Hacer privado" : "Hacer público", async () => { const { error } = await nube.from("proyectos").update({ publico: !p.publico }).eq("id", p.id); if (error) aviso("No se ha podido cambiar."); else misProyectos(); }], ["Borrar", null]);
       const b = fi.lastChild; b.onclick = async () => { if (b.dataset.seguro !== "1") { b.dataset.seguro = "1"; b.textContent = "Confirmar borrado"; return; } const r1 = await nube.storage.from("modelos").remove([p.ruta]), r2 = await nube.from("proyectos").delete().eq("id", p.id); if (r1.error || r2.error) aviso("No se ha podido borrar."); else { aviso("Proyecto borrado."); misProyectos(); } };
       d.append(fi); f.append(d);
     });
