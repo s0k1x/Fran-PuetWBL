@@ -33,11 +33,14 @@
     /* Une por capa y material, quitando lo que era de los coches */
     const cubos = new Map();
     piezas.forEach(p => {
-      const nom = p.mat.name || "", filtra = coches.length && QUITA.test(nom), clave = p.capa + "|" + p.mat.uuid;
-      let c = cubos.get(clave); if (!c) cubos.set(clave, c = { mat: p.mat, capa: p.capa, pos: [], nor: [], uv: [] });
+      const nom = p.mat.name || "", filtra = coches.length && QUITA.test(nom), lampara = /^(luz_|cristal_lampara)/.test(nom) && p.capa !== "CUB";
+      const cubo = capa => { const clave = capa + "|" + p.mat.uuid; let c = cubos.get(clave); if (!c) cubos.set(clave, c = { mat: p.mat, capa, pos: [], nor: [], uv: [] }); return c; };
+      const cX = cubo(p.capa), cT = lampara ? cubo("LT") : null;
       const at = p.g.attributes, uvA = at.uv, noA = at.normal;
       for (let t = p.ini; t + 2 < p.fin; t += 3) {
         if (filtra) { centro(p, t, v); const k = enCoche(v); if (k) { if (/^luz_calida/.test(nom)) { k.faros.add(v); k.nf++; } if (/^neumatico/.test(nom)) for (let j = 0; j < 3; j++) k.suelo = Math.min(k.suelo, vert(p, t + j, w).y); continue; } }
+        /* Lámparas de techo y tiras de los aleros: capa propia que se oculta al abrir la casa, para que no floten */
+        let c = cX; if (cT) { centro(p, t, v); if (v.y > 3.3) c = cT; }
         for (let j = 0; j < 3; j++) {
           const i = p.g.index ? p.g.index.getX(t + j) : t + j;
           w.fromBufferAttribute(at.position, i).applyMatrix4(p.m4); c.pos.push(w.x, w.y, w.z);

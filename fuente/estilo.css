@@ -462,3 +462,5 @@ html.texto-grande .txt p { font-size: 18px; }
 /* Con la portada oculta, nada de ella debe recibir toques: si no, tapa la vista 3D en el móvil */
 #portada.fuera { visibility: hidden; transition: opacity .7s var(--curva), visibility 0s linear .7s; }
 #portada.fuera, #portada.fuera * { pointer-events: none !important; }
+/* Marcas y cotas del recorrido: solo dentro del recorrido, nunca sobre la portada */
+#app:not(.dentro) #marcas { display: none; }
