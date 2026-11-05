@@ -88,6 +88,41 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 #palanca i { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px; border-radius: 50%; background: rgba(255, 255, 255, .78); }
 #etiPlanta { position: absolute; left: var(--gx); top: calc(var(--gt) + 26px); color: #fff; font-size: 12px; text-shadow: 0 1px 10px rgba(0, 0, 0, .7); z-index: 2; }
 #suelta { position: absolute; inset: 14px; border: 1px solid var(--texto); border-radius: 16px; background: rgba(0, 0, 0, .7); display: grid; place-items: center; font-weight: 300; font-size: 26px; letter-spacing: -.02em; pointer-events: none; z-index: 7; }
+#marcas { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
+.punto { position: absolute; left: 0; top: 0; width: 16px; height: 16px; border-radius: 50%; background: rgba(255, 255, 255, .92); box-shadow: 0 0 0 5px rgba(255, 255, 255, .22); pointer-events: auto; will-change: transform; transition: box-shadow .2s; }
+.punto:hover { box-shadow: 0 0 0 9px rgba(255, 255, 255, .3); }
+.cota { position: absolute; left: 0; top: 0; padding: 3px 7px; border-radius: 6px; background: var(--sup); font-family: var(--mono); font-size: 11px; white-space: nowrap; will-change: transform; }
+#ficha { position: absolute; left: var(--gx); bottom: var(--gb); width: min(320px, calc(100% - var(--gx) - var(--gr))); max-height: calc(100% - 120px); overflow: auto; box-sizing: border-box; display: grid; gap: 10px; padding: 14px; background: var(--sup); border: 1px solid var(--linea); border-radius: 14px; backdrop-filter: blur(18px); z-index: 3; }
+#ficha h3 { margin: 0; font-weight: 400; font-size: 18px; letter-spacing: -.02em; }
+#ficha p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--texto); overflow-wrap: anywhere; }
+#ficha img { width: 100%; border-radius: 8px; display: block; }
+#ficha a { color: var(--texto); font-size: 13px; }
+#ficha .ajuste { padding: 0; }
+textarea { font: inherit; color: inherit; width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--linea); border-radius: 8px; background: transparent; resize: vertical; }
+#modoH { position: absolute; left: 50%; top: var(--gt); transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 5px 6px 5px 14px; border-radius: 999px; background: var(--texto); color: #000; font-size: 13px; white-space: nowrap; max-width: calc(100% - var(--gx) - var(--gr)); box-sizing: border-box; z-index: 3; }
+#salirH { padding: 4px 10px; border-radius: 999px; background: #000; color: #fff; font-size: 12px; }
+#crono { position: absolute; left: 50%; top: var(--gt); transform: translateX(-50%); font-family: var(--mono); font-size: 13px; color: #fff; text-shadow: 0 1px 10px rgba(0, 0, 0, .8); z-index: 2; }
+#grabando { position: absolute; right: var(--gr); bottom: var(--gb); width: 9px; height: 9px; border-radius: 50%; background: var(--error); z-index: 2; }
+.linea { width: 100%; padding: 9px 10px; border-radius: 9px; text-align: left; font-size: 13px; }
+.linea:hover { background: var(--hover); }
+.barraE { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; padding: 5px 10px; font-size: 13px; }
+.barraE i { grid-column: 1 / -1; display: block; height: 1px; background: var(--texto); }
+#paleta { position: absolute; inset: 0; background: rgba(0, 0, 0, .55); display: grid; justify-items: center; align-items: start; padding-top: min(14vh, 110px); box-sizing: border-box; z-index: 8; }
+#caja { width: min(520px, calc(100% - var(--gx) - var(--gr))); max-height: min(68vh, calc(100% - 40px)); display: flex; flex-direction: column; background: rgba(14, 14, 14, .96); border: 1px solid var(--linea); border-radius: 16px; overflow: hidden; }
+#busca { background: none; border: 0; outline: 0; padding: 16px 18px; font-size: 16px; border-bottom: 1px solid var(--linea); }
+#resP { list-style: none; margin: 0; padding: 6px; overflow: auto; }
+#resP .grupo { padding: 12px 12px 4px; font-family: var(--mono); font-size: 11px; color: var(--gris); }
+#resP button { width: 100%; display: flex; justify-content: space-between; gap: 14px; align-items: baseline; padding: 9px 12px; border-radius: 9px; text-align: left; font-size: 14px; }
+#resP button .dato { text-align: right; }
+#resP button:hover, #resP .sel { background: var(--hover); }
+#catalogo { position: absolute; inset: 0; background: #000; overflow: auto; padding: calc(var(--gt) + 34px) var(--gr) var(--gb) var(--gx); z-index: 4; }
+#cierraCat { position: fixed; right: var(--gr); top: var(--gt); font-size: 13px; }
+#catalogo h2 { margin: 0 0 34px; font-weight: 300; font-size: clamp(30px, 4.4vw, 54px); letter-spacing: -.035em; }
+#catalogo dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 26px 40px; }
+#catalogo dt { font-size: 14px; }
+#catalogo dd { margin: 4px 0 0; color: var(--gris); font-size: 13px; line-height: 1.5; }
+#app.limpio #dock, #app.limpio #mini, #app.limpio #esq, #app.limpio #etiPlanta, #app.limpio #pista, #app.limpio #palanca, #app.limpio #hoja { display: none !important; }
+#esq, #mini, #dock { transition: opacity .2s; }
 @media (max-width: 760px) {
   :root { --gx: max(18px, env(safe-area-inset-left, 0px)); --gr: max(18px, env(safe-area-inset-right, 0px)); }
   #formatos { max-width: 58%; font-size: 10px; }
@@ -108,6 +143,7 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 <div id="app">
   <canvas id="vista" tabindex="0" aria-label="Vista 3D. Usa W, A, S y D para caminar y arrastra para mirar."></canvas>
   <div id="etiquetas" hidden></div>
+  <div id="marcas"></div>
   <div id="velo"></div>
 
   <section id="portada">
@@ -120,6 +156,7 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
       <div id="acciones">
         <label id="cargar" for="archivo">Cargar escaneo</label>
         <button id="muestra" type="button">Ver casa de muestra</button>
+        <button id="verH" type="button">Herramientas</button>
       </div>
       <div id="progreso" hidden>
         <div id="barra"><i></i></div>
@@ -128,7 +165,31 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
     </div>
   </section>
 
+  <section id="catalogo" hidden>
+    <button id="cierraCat" type="button">Cerrar</button>
+    <h2>Herramientas</h2>
+    <dl>
+      <div><dt>Medir</dt><dd>Distancia real entre dos puntos del modelo.</dd></div>
+      <div><dt>Puntos de información</dt><dd>Notas con texto, foto y enlace sobre cualquier superficie.</dd></div>
+      <div><dt>Muebles a escala</dt><dd>Coloca, gira y mueve mobiliario dentro del espacio.</dd></div>
+      <div><dt>Ambiente</dt><dd>Filtros de amanecer, atardecer, noche y blanco.</dd></div>
+      <div><dt>Corte de sección</dt><dd>Abre el modelo a la altura que quieras.</dd></div>
+      <div><dt>Foto, vídeo y plano</dt><dd>Exporta imágenes, recorridos y planos con superficies.</dd></div>
+      <div><dt>Reto de búsqueda</dt><dd>Encuentra las luces escondidas contra el reloj.</dd></div>
+      <div><dt>Estadísticas</dt><dd>Tiempo por estancia, mapa de calor y CSV.</dd></div>
+      <div><dt>Proyecto</dt><dd>Guarda modelo y anotaciones en un ZIP y ábrelo después.</dd></div>
+      <div><dt>Conversión a GLB</dt><dd>Pasa cualquier formato a GLB con texturas limitadas.</dd></div>
+      <div><dt>Realidad virtual</dt><dd>Entra con tu visor en navegadores compatibles.</dd></div>
+      <div><dt>Menú rápido</dt><dd>Pulsa K o / durante el recorrido para buscar cualquier función.</dd></div>
+    </dl>
+  </section>
+
   <button id="esq" type="button" hidden>Planta Caminable</button>
+  <div id="modoH" hidden><span id="modoTxt"></span><button id="salirH" type="button">Salir</button></div>
+  <div id="crono" hidden></div>
+  <div id="grabando" hidden></div>
+  <div id="ficha" hidden></div>
+  <div id="paleta" hidden><div id="caja"><input id="busca" type="search" placeholder="Buscar herramienta" autocomplete="off" aria-label="Buscar herramienta"><ul id="resP"></ul></div></div>
   <span id="etiPlanta" hidden></span>
   <div id="mini" hidden><canvas id="mapa" aria-label="Plano. Pulsa un punto para saltar hasta él."></canvas></div>
   <div id="pista" hidden></div>
@@ -144,7 +205,7 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
     <div id="herr">
       <button id="bPla" class="tool" type="button" aria-pressed="false">Plano</button>
       <button id="bMaq" class="tool" type="button" aria-pressed="false">Maqueta</button>
-      <button id="bAju" class="tool" type="button" aria-pressed="false">Ajustes</button>
+      <button id="bHer" class="tool" type="button" aria-label="Herramientas">Herramientas</button><button id="bAju" class="tool" type="button" aria-pressed="false" hidden>Ajustes</button>
     </div>
   </nav>
   <div id="aviso" role="status" hidden></div>
@@ -154,8 +215,8 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script>
-/* Para dejar un escaneo fijo en la web: publica el archivo junto a la página y rellena esto. */
-const CONFIG = { modelUrl: null, modelName: "escaneo", scale: 0, tilt: 0, eye: 1.6, rooms: [], spawn: null };
+/* Modelo fijo: guárdalo en modelos/ y escribe modelUrl: "modelos/casa.glb". contacto: tu correo o teléfono. */
+const CONFIG = { modelUrl: null, eye: 1.6, contacto: "" };
 /*__CASA__*/
 /*__LUZ__*/
 /*__ANALISIS__*/
@@ -225,10 +286,11 @@ const CONFIG = { modelUrl: null, modelName: "escaneo", scale: 0, tilt: 0, eye: 1
 
   async function recoger(entrada) {
     /* Convierte lo que llega (archivos, carpetas, ZIP) en una tabla nombre → bytes */
-    const tabla = new Map(), modelos = [];
+    const tabla = new Map(), modelos = []; let proyecto = null;
     const pon = (ruta, datos) => {
       if (/__MACOSX|\/\._/.test(ruta)) return;
       const n = nombreBase(ruta), e = ext(n);
+      if (n === "planta.json") { try { proyecto = JSON.parse(dec.decode(datos)); } catch (x) {} return; }
       tabla.set(n, datos);
       if (FORMATOS.includes(e)) modelos.push({ nombre: ruta.replace(/\\/g, "/").split("/").pop(), e, datos });
     };
@@ -241,7 +303,7 @@ const CONFIG = { modelUrl: null, modelName: "escaneo", scale: 0, tilt: 0, eye: 1
         for (const k in z) if (!k.endsWith("/")) pon(k, z[k]);
       } else pon(f.name, new Uint8Array(await f.arrayBuffer()));
     }
-    return { tabla, modelos };
+    return { tabla, modelos, proyecto };
   }
   async function preparaTGA(tabla) {
     const tga = [...tabla.keys()].filter(k => ext(k) === "tga"); if (!tga.length) return;
@@ -517,7 +579,7 @@ const CONFIG = { modelUrl: null, modelName: "escaneo", scale: 0, tilt: 0, eye: 1
           sh.fragmentShader = "varying vec2 vW;uniform float uW;\n" + sh.fragmentShader.replace("#include <dithering_fragment>", "#include <dithering_fragment>\nfloat dF=smoothstep(9.,26.,length(vW-vec2(8.,6.5)));gl_FragColor.rgb=mix(mix(gl_FragColor.rgb,vec3(0.),dF),vec3(1.),uW);");
         };
       }
-      const e = new THREE.Mesh(g, m); e.frustumCulled = false; if (G.p.suelo) e.userData.noCollide = true; raiz.add(e);
+      const e = new THREE.Mesh(g, m); e.frustumCulled = false; e.userData.nom = name; if (G.p.suelo) e.userData.noCollide = true; raiz.add(e);
     }
     const mv = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .05, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
     casa.vidrios.forEach(v => { const e = new THREE.Mesh(new THREE.BoxGeometry(v.b[0] - v.a[0], v.b[1] - v.a[1], v.b[2] - v.a[2]), mv); e.position.set((v.a[0] + v.b[0]) / 2, (v.a[1] + v.b[1]) / 2, (v.a[2] + v.b[2]) / 2); raiz.add(e); });
@@ -702,12 +764,12 @@ const CONFIG = { modelUrl: null, modelName: "escaneo", scale: 0, tilt: 0, eye: 1
     $("palanca").hidden = !(tactil && modo === "andar");
     if (d) fondo.parar(); else fondo.seguir();
   }
-  function comenzar() {
+  function comenzar(extra) {
     /* Tras cargar se entra directamente, sin vuelos ni demoras */
     T.brillo = 1; aplicaBrillo();
     T.modo = "andar"; T.clip = 1000; T.teclas = {}; T.fov = T.fovO = 72; camera.fov = 72; camera.updateProjectionMatrix();
     scene.background.copy(T.muestra ? BLANCO : FONDO); U.uW.value = T.muestra ? 1 : 0;
-    interfaz("andar"); ocupado(false); pista();
+    prepararHerramientas(extra); interfaz("andar"); ocupado(false); pista();
     $("vista").focus({ preventScroll: true });
   }
   let pistaT = 0;
@@ -773,6 +835,7 @@ const CONFIG = { modelUrl: null, modelName: "escaneo", scale: 0, tilt: 0, eye: 1
   function suelta(e) {
     if (e.pointerId === T.joy.id) { T.joy.id = null; T.joy.x = T.joy.y = 0; $("pomo").style.transform = ""; return; }
     const p = dedos.get(e.pointerId); dedos.delete(e.pointerId); vista.classList.remove("arrastra");
+    if (p && e.type === "pointerup" && p.m < 6 && performance.now() - p.t < 350 && T.modo === "andar" && clicHerr(e)) return;
     if (p && e.type === "pointerup" && e.pointerType === "mouse" && p.m < 6 && performance.now() - p.t < 350 && T.modo === "andar" && document.pointerLockElement !== vista) { try { const q = vista.requestPointerLock(); if (q && q.catch) q.catch(() => {}); } catch (x) {} }
   }
   vista.addEventListener("pointerup", suelta); vista.addEventListener("pointercancel", suelta);
@@ -874,6 +937,7 @@ const CONFIG = { modelUrl: null, modelName: "escaneo", scale: 0, tilt: 0, eye: 1
     mctx.setTransform(dpr, 0, 0, dpr, 0, 0); mctx.clearRect(0, 0, q.width, q.height); mctx.imageSmoothingEnabled = true;
     mctx.drawImage(lienzo, X(P.ox), Z(P.oz), P.w * P.cell * s, P.h * P.cell * s);
     if (q.width > 240) { mctx.font = "400 12px Geist, Arial, sans-serif"; mctx.textAlign = "center"; mctx.fillStyle = "#ecece8"; salas.filter(r => r.nivel === T.nivel).forEach(r => mctx.fillText(r.nombre, X(r.x), Z(r.z))); }
+    capaCalor(mctx, X, Z, s * .5);
     mctx.save(); mctx.translate(X(T.x), Z(T.z)); mctx.rotate(-T.yaw);
     const g = mctx.createRadialGradient(0, 0, 0, 0, 0, 30); g.addColorStop(0, "rgba(255,255,255,.34)"); g.addColorStop(1, "rgba(255,255,255,0)");
     mctx.fillStyle = g; mctx.beginPath(); mctx.moveTo(0, 0); mctx.arc(0, 0, 30, -Math.PI / 2 - .6, -Math.PI / 2 + .6); mctx.fill();
@@ -885,11 +949,11 @@ const CONFIG = { modelUrl: null, modelName: "escaneo", scale: 0, tilt: 0, eye: 1
     raiz.traverse(o => { if (!o.isMesh && !o.isPoints) return; o.geometry.dispose(); (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m && m.dispose()); });
     raiz.clear(); raiz.scale.setScalar(1); raiz.rotation.set(0, 0, 0);
   }
-  async function cargar(archivos) {
+  async function cargar(archivos, ruta) {
     ocupado(true);
     try {
       await estado("Leyendo " + (archivos.length === 1 ? archivos[0].name : archivos.length + " archivos"));
-      const { tabla, modelos } = await recoger(archivos);
+      const { tabla, modelos, proyecto } = await recoger(archivos);
       const raro = [...tabla.keys()].map(ext).find(x => ["usdz", "usd", "blend", "skp", "3dm", "c4d", "max", "ma", "mb", "dwg", "rvt", "ifc", "step", "stp"].includes(x));
       if (!modelos.length && raro) throw new Error(`Este visor no puede abrir .${raro} en el navegador. Expórtalo como GLB, FBX u OBJ desde tu programa o desde Polycam.`);
       if (!modelos.length) throw new Error("No encuentro ningún modelo 3D. Formatos admitidos: GLB, GLTF, OBJ, FBX, DAE, PLY, STL, 3DS, 3MF, AMF, PCD, XYZ o un ZIP con ellos.");
@@ -898,7 +962,9 @@ const CONFIG = { modelUrl: null, modelName: "escaneo", scale: 0, tilt: 0, eye: 1
       const faltan = new Set(), grupo = new THREE.Group();
       for (const m of elegidos) { await estado("Construyendo " + m.nombre); grupo.add(await leeModelo(m, tabla, faltan)); }
       await esperaTexturas();
-      await instalar(grupo, prio, elegidos[0].nombre.replace(/\.[^.]+$/, ""), {});
+      H.fuentes = archivos; H.ruta = ruta || null;
+      if (proyecto && proyecto.nombres) guarda.poner("pc:nombres:" + proyecto.nombre, proyecto.nombres);
+      await instalar(grupo, prio, (proyecto && proyecto.nombre) || elegidos[0].nombre.replace(/\.[^.]+$/, ""), proyecto ? { scale: proyecto.scale, extra: proyecto, eye: proyecto.eye } : {});
       if (faltan.size) aviso(faltan.size === 1 ? "Falta 1 textura. Súbela junto al modelo o en un ZIP para verla." : `Faltan ${faltan.size} texturas. Súbelas junto al modelo o en un ZIP para verlas.`);
     } catch (e) { console.error(e); fallo(motivo(e)); }
   }
@@ -912,8 +978,9 @@ const CONFIG = { modelUrl: null, modelName: "escaneo", scale: 0, tilt: 0, eye: 1
     raiz.add(grupo); T.modelo = grupo; T.scale = 1; T.tilt = 0; T.tiltPrev = 0;
     orientar(grupo, e);
     T.auto = op.scale || escalar(grupo); grupo.scale.setScalar(T.auto);
+    if (op.eye) T.eye = op.eye;
     await reconstruir();
-    comenzar();
+    comenzar(op.extra);
     if (T.nubes) aviso("Nube de puntos: no tiene superficies para pisar, así que te mueves libremente. Q y E suben y bajan.");
     else if (T.virtual) aviso("No detecto un suelo: he añadido uno invisible para que puedas rodear el modelo.");
   }
@@ -939,12 +1006,13 @@ const CONFIG = { modelUrl: null, modelName: "escaneo", scale: 0, tilt: 0, eye: 1
     try {
       await estado("Preparando la casa");
       const luz = await new Promise((ok, no) => new THREE.TextureLoader().load("luz.png", t => { t.flipY = false; t.encoding = THREE.sRGBEncoding; t.generateMipmaps = false; t.minFilter = t.magFilter = THREE.LinearFilter; t.needsUpdate = true; ok(t); }, undefined, () => no(new Error("No se ha podido cargar la iluminación de la casa."))));
-      vaciar(); T.muestra = true; T.auto = 1; T.scale = 1; cfg = construirCasa(luz); T.modelo = raiz;
+      vaciar(); T.muestra = true; T.auto = 1; T.scale = 1; H.fuentes = null; H.ruta = null; T.nombre = "casa-patio"; cfg = construirCasa(luz); T.modelo = raiz;
       await reconstruir();
       comenzar();
     } catch (e) { console.error(e); fallo(motivo(e)); }
   });
 
+/*__HERR__*/
   /* ---------- Bucle ---------- */
   function andar(dt) {
     let f = 0, s = 0, u = 0; const k = T.teclas;
@@ -982,11 +1050,10 @@ const CONFIG = { modelUrl: null, modelName: "escaneo", scale: 0, tilt: 0, eye: 1
   }
   let ult = performance.now(), tM = 0;
   function tick(now) {
-    requestAnimationFrame(tick);
     const dt = Math.min(.05, (now - ult) / 1000); ult = now;
     if (T.modo === "portada") return;
     if (!document.hasFocus() && Object.keys(T.teclas).length) soltarTodo();
-    if (T.modo === "andar") andar(dt);
+    if (T.modo === "andar" && !xrSes) andar(dt);
     else if (T.modo === "orbita") { posOrbita(camera.position); camera.lookAt(T.centro); ponEtiquetas(); }
     else if (T.fly) {
       const f = T.fly; f.t = Math.min(1, f.t + dt / f.dur);
@@ -995,21 +1062,24 @@ const CONFIG = { modelUrl: null, modelName: "escaneo", scale: 0, tilt: 0, eye: 1
       if (f.t >= 1) { T.fly = null; f.fin(); }
     }
     if (T.muestra) { const wO = $("etiquetas").hidden ? 1 : 0; if (Math.abs(U.uW.value - wO) > .001) { U.uW.value += (wO - U.uW.value) * (1 - Math.exp(-dt * 4)); scene.background.copy(NEGRO).lerp(BLANCO, U.uW.value); } }
+    cadaFrame(dt, now);
     if (now - tM > 33) { tM = now; dibujaMapa(); }
     corte.constant = T.clip;
     renderer.render(scene, camera);
+    trasRender();
   }
-  medir(); requestAnimationFrame(tick);
-  if (CONFIG.modelUrl) (async () => {
+  medir(); renderer.setAnimationLoop(tick);
+  (async function arrancar() {
+    if (await abreCompartido()) return;
+    let m = CONFIG.modelUrl; try { m = new URLSearchParams(location.search).get("m") || m; } catch (e) {}
+    if (!m || !/^[\w\-./ ]+$/.test(m) || m.includes("..") || m.startsWith("/")) return;
     ocupado(true);
     try {
-      await estado("Descargando el escaneo");
-      const q = await fetch(CONFIG.modelUrl); if (!q.ok) throw new Error("No se ha encontrado " + CONFIG.modelUrl);
-      const d = new Uint8Array(await q.arrayBuffer()), e = ext(CONFIG.modelUrl), tabla = new Map([[nombreBase(CONFIG.modelUrl), d]]);
-      const g = new THREE.Group(); g.add(await leeModelo({ datos: d, e }, tabla, new Set()));
-      await instalar(g, e, CONFIG.modelName, CONFIG);
+      await estado("Descargando el modelo");
+      const q = await fetch(m); if (!q.ok) throw new Error("No se ha encontrado " + m);
+      await cargar([new File([await q.arrayBuffer()], m.split("/").pop())], m);
     } catch (e) { fallo(motivo(e)); }
   })();
-  if (location.hostname === "localhost") window.__p = { T, get P() { return P; }, get salas() { return salas; }, get planos() { return planos; }, get C() { return C; }, cargar, camera, rayo, andar, sueloEn };
+  if (location.hostname === "localhost") window.__p = { T, get P() { return P; }, get salas() { return salas; }, get planos() { return planos; }, get C() { return C; }, cargar, camera, rayo, andar, sueloEn, H, get D() { return D; }, clicHerr, AGRUPA, medirPunto, exportaPlano, iniciaReto, informe, zipProyecto, modoH };
 })();
 </script>
