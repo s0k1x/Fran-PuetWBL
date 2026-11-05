@@ -1,6 +1,6 @@
   /* ---------- Interfaz: iconos, cabecera, menú móvil, carga, índice y animaciones ---------- */
   const ICO = {
-    logo: '<path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 9.4V20h13V9.4"/><path d="M10 20v-5.2a2 2 0 0 1 4 0V20"/>',
+    logo: '<defs><linearGradient id="gCubo" x1="12" y1="9" x2="21" y2="20" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity=".28"/></linearGradient></defs><path d="M12 12 21 7.2v9.6L12 22z" fill="url(#gCubo)" stroke="none"/><path d="M12 2 3 7.2v9.6L12 22M12 2l9 5.2M3 7.2 12 12v10" stroke-opacity=".75"/>',
     flecha: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>', abajo: '<path d="m6 9 6 6 6-6"/>',
     subir: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
     menu: '<path d="M4 8h16M4 16h16"/>', x: '<path d="M18 6 6 18M6 6l12 12"/>',

@@ -6,7 +6,7 @@
   const R = {
     activo: false, tex: new Map(), mats: new Map(), pend: 0, t: 0, ambiente: "Natural",
     exp: 1, mascara: null, caja: null, transparentes: new Set(), luces: [], cielo: null, suelo: null, cieloEnv: {}, envAct: null,
-    nivel: 2, medidas: [], fijo: false, lucesOn: null, abObj: 0, abS: 0, sombras: true, solBase: 1, hemiBase: .2
+    nivel: 2, medidas: [], fijo: false, lucesOn: true, expAuto: 1, expMed: 1, escala: 1, mascaraDatos: null, abObj: 0, abS: 0, sombras: true, solBase: 1, hemiBase: .2
   };
   const RL = R;
   const NIVELES = ["Básica", "Alta", "Ultra"];
@@ -81,7 +81,7 @@
     Natural: { hdr: "rooitou_park", turb: 2.4, ray: 1.1, mie: .004, g: .82, exp: .92, niebla: 0xb9cad8, dens: .0026, env: .55, noche: 0, gan: .32, sol: 1.5 },
     Amanecer: { hdr: "kiara_1_dawn", turb: 4, ray: 2.2, mie: .006, g: .86, exp: 1, niebla: 0xd9b9a2, dens: .003, env: .55, noche: .25, gan: .3, sol: 1.5 },
     Atardecer: { hdr: "venice_sunset", turb: 6, ray: 2.8, mie: .008, g: .9, exp: 1.05, niebla: 0xc98a62, dens: .0032, env: .5, noche: .5, gan: .3, sol: 1.6 },
-    Noche: { hdr: "moonless_golf", turb: 1, ray: .4, mie: .002, g: .7, exp: 1.3, niebla: 0x060a12, dens: .004, env: .6, noche: 1, gan: .03, sol: 1 },
+    Noche: { hdr: "moonless_golf", turb: 1, ray: .4, mie: .002, g: .7, exp: 1, niebla: 0x060a12, dens: .004, env: .6, noche: 1, gan: .03, sol: 1 },
     Blanco: { hdr: "rooitou_park", turb: 1.5, ray: .3, mie: .002, g: .7, exp: 1, niebla: 0xe8e8e6, dens: .003, env: .9, noche: 0, gan: .5, sol: 1.2 }
   };
 
@@ -93,12 +93,12 @@
     R.tex.set(k, t); return t;
   }
   const esperaReal = (max = 9000) => new Promise(ok => { const t0 = performance.now(), mira = () => (R.pend <= 0 || performance.now() - t0 > max) ? ok() : setTimeout(mira, 60); mira(); });
-  const U_R = { uT: { value: 0 }, uMask: { value: null }, uMaskBox: { value: new THREE.Vector4(0, 0, 0, 0) }, uNiv: { value: new THREE.Vector2(3.75, 7.4) }, uEnvIn: { value: .7 }, uCaus: { value: .6 }, uNoche: { value: 0 }, uLuz: { value: 1 } };
+  const U_R = { uT: { value: 0 }, uMask: { value: null }, uMaskBox: { value: new THREE.Vector4(0, 0, 0, 0) }, uNiv: { value: new THREE.Vector2(3.75, 7.4) }, uEnvIn: { value: .82 }, uCaus: { value: .6 }, uNoche: { value: 0 }, uLuz: { value: 1 }, uRelleno: { value: new THREE.Vector3() } };
 
   /* Fragmentos de shader comunes */
   const GLSL_CAJA = `
     varying vec3 vMundo; varying vec3 vNorM;
-    uniform vec2 uEsc; uniform float uNs, uRM, uT, uEnvIn, uCaus, uNoche, uLuz; uniform vec3 uMedia;
+    uniform vec2 uEsc; uniform float uNs, uRM, uT, uEnvIn, uCaus, uNoche, uLuz; uniform vec3 uRelleno; uniform vec3 uMedia;
     uniform sampler2D tC, tN, tR, uMask; uniform vec4 uMaskBox; uniform vec2 uNiv;
     vec2 bUV; vec3 bT, bB, bN;
     void cajaUV() {
@@ -163,6 +163,7 @@
           float bIn = interior(), bEnv = mix(1., uEnvIn, bIn);
           iblIrradiance = mix(iblIrradiance, vec3(dot(iblIrradiance, vec3(.3, .59, .11))) * vec3(1.04, 1., .93), bIn * .85);
           iblIrradiance *= bEnv; irradiance *= bEnv; radiance *= mix(1., bEnv, .55);
+          irradiance += uRelleno * bIn;
         #endif`);
       if (op.vidrio) f = f.replace("#include <output_fragment>", `vec3 bSp = reflectedLight.directSpecular + reflectedLight.indirectSpecular;
           float bF = pow(1. - abs(dot(normalize(-vViewPosition), normal)), 4.);
@@ -181,8 +182,9 @@
       m = new THREE.MeshPhysicalMaterial({ color: base, roughness: d.r, metalness: 0, transparent: true, opacity: d.op, depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 1.3, ior: 1.52, specularIntensity: 1 });
       m.premultipliedAlpha = true; inyecta(m, { n: 0 }, { vidrio: true, sinMascara: true });
     } else if (d.tipo === "agua") {
-      m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: .03, metalness: 0, transmission: 1, thickness: 1.6, ior: 1.333, attenuationColor: new THREE.Color(0x2a9bb3), attenuationDistance: 2.6, envMapIntensity: 1.1, side: THREE.DoubleSide, specularIntensity: 1 });
-      inyecta(m, { e: 2.2, n: .32 }, { agua: true, tN: cargaTex("agua_n"), sinMascara: true });
+      /* Agua sin pasada extra: transparente con reflejos de Fresnel, así no se dibuja la escena dos veces */
+      m = new THREE.MeshPhysicalMaterial({ color: 0x1f8fa6, roughness: .035, metalness: 0, transparent: true, opacity: .5, depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 1.25, ior: 1.333, specularIntensity: 1 });
+      m.premultipliedAlpha = true; inyecta(m, { e: 2.2, n: .32 }, { agua: true, vidrio: true, tN: cargaTex("agua_n"), sinMascara: true });
     } else {
       const fis = d.cc || d.sh;
       m = new (fis ? THREE.MeshPhysicalMaterial : THREE.MeshStandardMaterial)({ color: 0xffffff, roughness: d.r ?? .7, metalness: d.m || 0, side: THREE.DoubleSide });
@@ -201,13 +203,14 @@
   /* Máscara de interiores: dentro de casa el cielo ilumina menos y manda la luz que entra por las ventanas */
   function mascaraInteriores(rooms) {
     const rs = (rooms || []).filter(r => r.rects && !/terraza|balc[oó]n|porche|jard[ií]n|piscina|exterior/i.test(r.name));
-    if (!rs.length) { U_R.uMaskBox.value.set(0, 0, 0, 0); return; }
+    if (!rs.length) { U_R.uMaskBox.value.set(0, 0, 0, 0); R.mascaraDatos = null; return; }
     let xa = 1e9, xb = -1e9, za = 1e9, zb = -1e9; rs.forEach(r => r.rects.forEach(([x0, x1, z0, z1]) => { xa = Math.min(xa, x0); xb = Math.max(xb, x1); za = Math.min(za, z0); zb = Math.max(zb, z1); }));
     xa -= 1; za -= 1; xb += 1; zb += 1;
     const S = 256, c = document.createElement("canvas"); c.width = c.height = S; const g = c.getContext("2d"), sx = S / (xb - xa), sz = S / (zb - za);
     g.fillStyle = "#000"; g.fillRect(0, 0, S, S); g.globalCompositeOperation = "lighter";
     const ys = [...new Set(rs.map(r => +(r.y || 0).toFixed(1)))].sort((a, b) => a - b);
     rs.forEach(r => { const alta = ys.length > 1 && r.y > ys[0] + .5; g.fillStyle = alta ? "#00ff00" : "#ff0000"; r.rects.forEach(([x0, x1, z0, z1]) => g.fillRect((x0 - xa) * sx, (z0 - za) * sz, (x1 - x0) * sx, (z1 - z0) * sz)); });
+    R.mascaraDatos = { d: g.getImageData(0, 0, S, S).data, S };
     const t = new THREE.CanvasTexture(c); t.minFilter = t.magFilter = THREE.LinearFilter; t.generateMipmaps = false; t.flipY = false;
     if (R.mascara) R.mascara.dispose(); R.mascara = t; U_R.uMask.value = t;
     U_R.uMaskBox.value.set(xa, za, 1 / (xb - xa), 1 / (zb - za));
@@ -250,8 +253,10 @@
   /* Lámparas: encendidas solas al atardecer y de noche, o como diga quien visita (también la IA) */
   function aplicaLuces() {
     const C = CIELOS[R.ambiente] || CIELOS.Natural, on = R.lucesOn === null ? C.noche >= .25 : R.lucesOn;
-    U_R.uLuz.value = on ? 1 + C.noche * 5 : .04;
-    R.luces.forEach(l => l.intensity = on ? 1.7 + C.noche * 7 : 0);
+    U_R.uLuz.value = on ? 1 + C.noche * 1.1 : .04;
+    /* Luz de relleno de las lámparas en todo el interior: ilumina como varias luces sin costar como ellas */
+    const k = on ? .95 + C.noche * .55 : C.noche > .7 ? .05 : 0; U_R.uRelleno.value.set(1, .84, .66).multiplyScalar(k * Math.PI * .32);
+    R.luces.forEach(l => l.intensity = on ? 1.2 + C.noche * 2.6 : 0);
     return on;
   }
   function ponLuces(v) { const antes = aplicaLuces(); R.lucesOn = v === "alternar" ? !antes : !!v; return aplicaLuces(); }
@@ -279,7 +284,7 @@
     R.transparentes = new Set(e.trans);
     /* Lámparas reales en las estancias principales: se encienden al atardecer y de noche */
     R.luces.forEach(l => scene.remove(l)); R.luces = [];
-    if (R.nivel >= 1) (e.rooms || []).filter(r => r.rects && !/terraza|balc|garaje|pasillo|distribuidor|almac|cuarto|despensa|bodega/i.test(r.name)).sort((a, b) => b.area - a.area).slice(0, R.nivel >= 2 ? 10 : 5).forEach(r => {
+    if (R.nivel >= 1) (e.rooms || []).filter(r => r.rects && !/terraza|balc|garaje|pasillo|distribuidor|almac|cuarto|despensa|bodega/i.test(r.name)).sort((a, b) => b.area - a.area).slice(0, R.nivel >= 2 ? 4 : 0).forEach(r => {
       const l = new THREE.PointLight(0xffd2a0, 0, Math.max(7, Math.sqrt(r.area) * 1.6), 2); l.position.set(r.x, (r.y || 0) + 2.45, r.z); scene.add(l); R.luces.push(l);
     });
     R.cielo.visible = R.suelo.visible = true;
@@ -330,7 +335,7 @@
       c += (texture2D(tA, vUv + uPx).rgb + texture2D(tA, vUv - uPx).rgb + texture2D(tA, vUv + vec2(uPx.x, -uPx.y)).rgb + texture2D(tA, vUv - vec2(uPx.x, -uPx.y)).rgb) * 2.;
       gl_FragColor = vec4(c / 12. + texture2D(tB, vUv).rgb * uMez, 1.); }`;
   const FS_FINAL = `
-    varying vec2 vUv; uniform sampler2D tHDR, tAO, tBloom; uniform float uExp, uAO, uBloom, uT, uGrano, uVin, uSat, uCon; uniform vec2 uRes; uniform bool uConAO, uConBloom;
+    varying vec2 vUv; uniform sampler2D tHDR, tAO, tBloom; uniform float uExp, uAO, uBloom, uT, uGrano, uVin, uSat, uCon, uNit; uniform vec2 uRes, uPx; uniform bool uConAO, uConBloom;
     vec3 RRTAndODTFit(vec3 v) { vec3 a = v * (v + .0245786) - .000090537; vec3 b = v * (.983729 * v + .4329510) + .238081; return a / b; }
     vec3 aces(vec3 c) {
       const mat3 I = mat3(vec3(.59719, .07600, .02840), vec3(.35458, .90834, .13383), vec3(.04823, .01566, .83777));
@@ -340,9 +345,12 @@
     vec3 srgb(vec3 c) { return mix(c * 12.92, pow(c, vec3(.41666)) * 1.055 - .055, step(.0031308, c)); }
     void main() {
       vec3 c = texture2D(tHDR, vUv).rgb; if (c.r != c.r || c.g != c.g || c.b != c.b) c = vec3(0.);
-      if (uConAO) { float ao = texture2D(tAO, vUv).r; c *= mix(1., ao, uAO); }
-      if (uConBloom) c += texture2D(tBloom, vUv).rgb * uBloom;
-      c = srgb(aces(c));
+      /* Nitidez: realce suave de bordes sobre la imagen ya en tono final */
+      vec3 vec = texture2D(tHDR, vUv + vec2(uPx.x, 0.)).rgb + texture2D(tHDR, vUv - vec2(uPx.x, 0.)).rgb + texture2D(tHDR, vUv + vec2(0., uPx.y)).rgb + texture2D(tHDR, vUv - vec2(0., uPx.y)).rgb;
+      float ao = uConAO ? mix(1., texture2D(tAO, vUv).r, uAO) : 1.;
+      vec3 bl = uConBloom ? texture2D(tBloom, vUv).rgb * uBloom : vec3(0.);
+      vec3 cT = srgb(aces(c * ao + bl)), vT = srgb(aces(min(vec * .25, vec3(64.)) * ao + bl));
+      c = clamp(cT + (cT - vT) * uNit, 0., 1.);
       float l = dot(c, vec3(.2126, .7152, .0722));
       c = mix(vec3(l), c, uSat);
       c = (c - .5) * uCon + .5;
@@ -364,8 +372,10 @@
     PQ.mBri = shQ(FS_BRILLO, { tA: { value: null }, uUmbral: { value: 1.1 }, uPx: { value: new THREE.Vector2() } });
     PQ.mBaja = shQ(FS_BAJA, { tA: { value: null }, uPx: { value: new THREE.Vector2() } });
     PQ.mSube = shQ(FS_SUBE, { tA: { value: null }, tB: { value: null }, uPx: { value: new THREE.Vector2() }, uMez: { value: 1 } });
-    PQ.mFin = shQ(FS_FINAL, { tHDR: { value: null }, tAO: { value: null }, tBloom: { value: null }, uExp: { value: 1 }, uAO: { value: .85 }, uBloom: { value: .12 }, uT: { value: 0 }, uGrano: { value: .018 }, uVin: { value: .55 }, uSat: { value: 1.08 }, uCon: { value: 1.07 }, uRes: { value: new THREE.Vector2() }, uConAO: { value: true }, uConBloom: { value: true } });
+    PQ.mFin = shQ(FS_FINAL, { tHDR: { value: null }, tAO: { value: null }, tBloom: { value: null }, uExp: { value: 1 }, uAO: { value: .85 }, uBloom: { value: .12 }, uT: { value: 0 }, uGrano: { value: .018 }, uVin: { value: .55 }, uSat: { value: 1.08 }, uCon: { value: 1.07 }, uRes: { value: new THREE.Vector2() }, uConAO: { value: true }, uConBloom: { value: true }, uNit: { value: .3 }, uPx: { value: new THREE.Vector2() } });
     PQ.mNor = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide });
+    PQ.mLum = shQ(`varying vec2 vUv; uniform sampler2D tA; void main(){ float s = 0.; for (int i = 0; i < 8; i++) for (int j = 0; j < 8; j++) { vec3 c = texture2D(tA, (vec2(float(i), float(j)) + .5) / 8.).rgb; s += log2(max(dot(c, vec3(.2126, .7152, .0722)), 1e-4)); } gl_FragColor = vec4(vec3(clamp((s / 64. + 10.) / 14., 0., 1.)), 1.); }`, { tA: { value: null } });
+    PQ.lum = new THREE.WebGLRenderTarget(1, 1, { type: THREE.UnsignedByteType, depthBuffer: false }); PQ.buf = new Uint8Array(4); PQ.cuenta = 0;
     PQ.listo = true; return true;
   }
   function tamPost() {
@@ -383,16 +393,23 @@
     if (!R.activo) return;
     const prev = R.abS; R.abS = prev < 0 ? R.abObj : prev + (R.abObj - prev) * (calmo ? 1 : .1);
     if (Math.abs(R.abS - prev) < 1e-4) return;
-    const a = R.abS; U_R.uEnvIn.value = .7 + .3 * a;
+    const a = R.abS; U_R.uEnvIn.value = .82 + .18 * a;
     sol.intensity = R.solBase * (1 - .35 * a); hemi.intensity = R.hemiBase * (1 + 2.2 * a);
     const quiere = a < .4, e = ESC[escAct];
     if (quiere !== R.sombras && e) { R.sombras = quiere; e.grupo.traverse(o => { if (o.isMesh) o.castShadow = quiere && !!o.userData.cs; }); renderer.shadowMap.needsUpdate = true; }
   }
+  /* ¿Está la cámara dentro de casa? Se mira en la máscara de interiores */
+  function camDentro() {
+    const m = R.mascaraDatos, b = U_R.uMaskBox.value; if (!m || !b.z) return 0;
+    const p = camera.position, i = Math.floor((p.x - b.x) * b.z * m.S), j = Math.floor((p.z - b.y) * b.w * m.S); if (i < 0 || j < 0 || i >= m.S || j >= m.S || p.y > U_R.uNiv.value.y) return 0;
+    const k = (j * m.S + i) * 4; return (p.y < U_R.uNiv.value.x + 1.6 ? m.d[k] : m.d[k + 1]) / 255;
+  }
   function pintar() {
     R.t += 1 / 60; U_R.uT.value = performance.now() / 1000; casaAbierta();
+    if (R.activo) { const obj = usaPost() ? R.expMed : 1 + camDentro() * .38 * (1 - R.abS); R.expAuto += (obj - R.expAuto) * (calmo ? 1 : .05); } else R.expAuto = 1;
     if (!usaPost()) {
       const tm = renderer.toneMapping; if (tm !== THREE.ACESFilmicToneMapping) { renderer.toneMapping = THREE.ACESFilmicToneMapping; }
-      const e = renderer.toneMappingExposure; renderer.toneMappingExposure = e * (R.activo ? R.exp : 1);
+      const e = renderer.toneMappingExposure; renderer.toneMappingExposure = e * (R.activo ? R.exp * R.expAuto : 1);
       renderer.setRenderTarget(null); renderer.render(scene, camera); renderer.toneMappingExposure = e; return;
     }
     tamPost();
@@ -414,8 +431,10 @@
     const bl = PQ.bl, b = PQ.mBri.uniforms; b.tA.value = PQ.hdr.texture; b.uPx.value.set(.5 / PQ.w, .5 / PQ.h); b.uUmbral.value = 1.05; paso(PQ.mBri, bl[0].a);
     for (let i = 1; i < bl.length; i++) { const u = PQ.mBaja.uniforms; u.tA.value = bl[i - 1].a.texture; u.uPx.value.set(1 / bl[i - 1].w, 1 / bl[i - 1].h); paso(PQ.mBaja, bl[i].a); }
     for (let i = bl.length - 1; i > 0; i--) { const u = PQ.mSube.uniforms, src = i === bl.length - 1 ? bl[i].a : bl[i].b; u.tA.value = src.texture; u.tB.value = bl[i - 1].a.texture; u.uPx.value.set(.5 / bl[i].w, .5 / bl[i].h); u.uMez.value = 1; paso(PQ.mSube, bl[i - 1].b); }
-    const f = PQ.mFin.uniforms; f.tHDR.value = PQ.hdr.texture; f.tAO.value = PQ.ao1.texture; f.tBloom.value = bl[0].b.texture; f.uConAO.value = ao; f.uConBloom.value = true;
-    f.uExp.value = renderer.toneMappingExposure * R.exp; f.uT.value = R.t; f.uBloom.value = .07 + U_R.uNoche.value * .1;
+    /* Exposición automática: como una cámara, mide la luz media cada pocos fotogramas */
+    if (++PQ.cuenta % 12 === 0) { const l = PQ.mLum.uniforms; l.tA.value = PQ.hdr.texture; paso(PQ.mLum, PQ.lum); renderer.readRenderTargetPixels(PQ.lum, 0, 0, 1, 1, PQ.buf); const lm = Math.pow(2, PQ.buf[0] / 255 * 14 - 10); R.expMed = Math.max(.75, Math.min(1.9, Math.pow(.2 / Math.max(lm, 1e-4), .55))); }
+    const f = PQ.mFin.uniforms; f.tHDR.value = PQ.hdr.texture; f.uPx.value.set(1 / PQ.w, 1 / PQ.h); f.uNit.value = tactil ? .38 : .28; f.tAO.value = PQ.ao1.texture; f.tBloom.value = bl[0].b.texture; f.uConAO.value = ao; f.uConBloom.value = true;
+    f.uExp.value = renderer.toneMappingExposure * R.exp * R.expAuto; f.uT.value = R.t; f.uBloom.value = .06 + U_R.uNoche.value * .025;
     paso(PQ.mFin, null);
   }
   /* Calidad: elige al empezar y baja sola si la imagen va a tirones */
@@ -434,6 +453,10 @@
     if (R.fijo || R.nivel === 0 || document.hidden) return;
     R.medidas.push(dt); if (R.medidas.length < 120) return;
     const o = R.medidas.slice().sort((a, b) => a - b), med = o[60]; R.medidas = [];
-    if (med > 1 / 26) { ponNivel(R.nivel - 1); console.info("Calidad ajustada a", NIVELES[R.nivel]); }
+    if (med > 1 / 26) {
+      /* Primero baja un poco la resolución interna; solo si no basta, los efectos */
+      if (R.escala > .76) { R.escala = +(R.escala - .12).toFixed(2); medir(); console.info("Resolución interna al", Math.round(R.escala * 100), "%"); }
+      else { ponNivel(R.nivel - 1); console.info("Calidad ajustada a", NIVELES[R.nivel]); }
+    }
   }
   nivelInicial();

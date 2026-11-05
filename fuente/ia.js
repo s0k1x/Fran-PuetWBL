@@ -6,7 +6,7 @@
   /* Cola: una petición cada vez. Caché: la misma pregunta no se repite. Reintento si Google está saturado. */
   let colaIA = Promise.resolve(); const cacheIA = new Map(), MODELO_RAPIDO = "gemini-3.5-flash-lite";
   function gemini(partes, esquema, nivel = "rapido") {
-    const clave = claveIA(); if (!clave && !nube) return Promise.reject(new Error("Falta la clave de Gemini. Añádela en Herramientas, Conectar Gemini."));
+    const clave = claveIA(); if (!clave && !nube) return Promise.reject(new Error("La IA no está disponible en esta copia de la web."));
     const llave = JSON.stringify([partes, !!esquema, nivel]); if (llave.length < 400000 && cacheIA.has(llave)) return Promise.resolve(cacheIA.get(llave));
     const tarea = () => llamaGemini(partes, esquema, nivel, clave).then(r => { if (llave.length < 400000) { if (cacheIA.size > 60) cacheIA.delete(cacheIA.keys().next().value); cacheIA.set(llave, r); } return r; });
     const p = colaIA.then(tarea, tarea); colaIA = p.catch(() => {}); return p;
@@ -30,8 +30,8 @@
       if (r.status === 413) throw new Error("La imagen es demasiado grande para la IA.");
       if (r.status === 403 && !clave) throw new Error("Esta web no tiene permiso para usar la IA. Revisa la dirección autorizada.");
       if (e === "cupo_ip" || e === "cupo_total") throw new Error("Se ha alcanzado el límite diario de IA de esta web. Prueba mañana.");
-      if (r.status === 400 || r.status === 401 || r.status === 403) throw new Error("Gemini ha rechazado la clave o la petición. Revisa la clave y el modelo.");
-      if (r.status === 404) throw new Error("Ese modelo de Gemini no está disponible. Revisa el nombre en Conectar Gemini.");
+      if (r.status === 400 || r.status === 401 || r.status === 403) throw new Error("La IA ha rechazado la petición. Prueba a reformularla.");
+      if (r.status === 404) throw new Error("El modelo de IA no está disponible ahora mismo. Inténtalo en un momento.");
       if (r.status === 429) throw new Error("Se ha agotado el cupo de Gemini. Espera un poco o revisa tu plan en Google AI Studio.");
       throw new Error("Gemini no ha respondido. Inténtalo de nuevo.");
     }
@@ -102,10 +102,16 @@
     };
     $("enviarIA").onclick = envia; $("pregunta").onkeydown = e => { e.stopPropagation(); if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); envia(); } };
   }
-  async function anuncioIA() {
-    aviso("Escribiendo…");
+  const FORMATOS_AN = {
+    portal: "Escribe en español un anuncio para un portal inmobiliario de unas 120 palabras: titular atractivo, descripción por estancias y cierre con llamada a la acción.",
+    redes: "Escribe en español una publicación para Instagram de unas 60 palabras, con un gancho inicial, tono aspiracional, 2 o 3 emojis sobrios y 6 hashtags relevantes al final.",
+    ingles: "Write a real estate listing in English of about 110 words, with a catchy headline and a room by room description.",
+    correo: "Escribe en español un correo breve y cercano para enviar a un cliente interesado, presentando este espacio e invitándole a recorrerlo en 3D con el enlace."
+  };
+  async function anuncioIA(formato = "portal") {
+    hoja(null); aviso("Escribiendo…");
     try {
-      const t = await gemini([{ role: "user", parts: [parteImagen(vistaJPEG()), { text: `Escribe en español un anuncio inmobiliario de unas 90 palabras para este espacio, sin inventar datos que no aparezcan aquí. Datos: ${contexto()}` }] }]);
+      const t = await gemini([{ role: "user", parts: [parteImagen(vistaJPEG()), { text: `${FORMATOS_AN[formato] || FORMATOS_AN.portal} No inventes datos que no aparezcan aquí; si falta un dato, omítelo. Datos: ${contexto()}` }] }]);
       const f = $("ficha"); f.hidden = false; f.textContent = ""; const h = texto("h3"), p = texto("p"), fi = texto("div", "fila"), c = texto("button", "tool"), x = texto("button", "tool"); h.textContent = "Anuncio"; p.textContent = t; p.style.userSelect = "text"; c.type = x.type = "button"; c.textContent = "Copiar"; x.textContent = "Cerrar"; c.onclick = () => copia(t, "Anuncio copiado."); x.onclick = () => f.hidden = true; fi.append(c, x); f.append(h, p, fi);
     } catch (e) { aviso(e.message); }
   }
@@ -139,6 +145,43 @@
       let n = 0; (r.puntos || []).forEach(p => { const s = salas[p.indice]; if (!s) return; D.puntos.push({ x: s.x, y: planos[s.nivel].floorY + 1.4, z: s.z, t: String(p.titulo).slice(0, 80), d: String(p.texto).slice(0, 600), u: "" }); n++; }); guardaD(); pintaPuntos(); aviso(`${n} puntos de información creados.`);
     } catch (e) { $("velo").style.opacity = 0; aviso(e.message); }
   }
+  /* Visita guiada: la IA escribe una frase por estancia y la web te lleva por cada una mientras la lee */
+  async function visitaGuiadaIA() {
+    if (!salas.length) return; aviso("Preparando la visita guiada…");
+    try {
+      const parts = [{ text: "Eres guía de una visita inmobiliaria. Para cada estancia escribe en español una frase hablada de 15 a 28 palabras, cálida y concreta, a partir de lo que se ve en sus imágenes. No inventes medidas ni precios. Ordena las paradas como un recorrido natural desde la entrada. Cada estancia va precedida de su índice." }];
+      $("velo").style.opacity = 1; vistasEstancias(parts); $("velo").style.opacity = 0;
+      const r = await gemini([{ role: "user", parts }], { type: "object", properties: { paradas: { type: "array", items: { type: "object", properties: { indice: { type: "integer" }, texto: { type: "string" } }, required: ["indice", "texto"] } } }, required: ["paradas"] }, "fuerte");
+      const lista = (r.paradas || []).filter(p => salas[p.indice]).slice(0, 14); if (!lista.length) { aviso("La IA no ha podido preparar la visita."); return; }
+      const bar = $("modoH"), txt = $("modoTxt"); let n = 0, vivo = true; bar.hidden = false;
+      const fin = () => { vivo = false; if (window.speechSynthesis) speechSynthesis.cancel(); bar.hidden = true; $("pista").hidden = true; };
+      const sigue = () => {
+        if (!vivo || bar.hidden) { fin(); return; }
+        if (n >= lista.length) { fin(); aviso("Fin de la visita."); return; }
+        const p = lista[n++], s = salas[p.indice]; txt.textContent = `Visita guiada · ${n}/${lista.length} · ${s.nombre}`; saltar(s);
+        const el = $("pista"); el.textContent = String(p.texto); el.hidden = false; el.style.opacity = 1; el.style.whiteSpace = "normal"; el.style.maxWidth = "min(620px, 90vw)";
+        const espera = () => setTimeout(sigue, 900);
+        if (window.speechSynthesis) { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(String(p.texto)); u.lang = "es-ES"; u.rate = 1; u.onend = espera; u.onerror = () => setTimeout(sigue, 1500 + p.texto.length * 55); speechSynthesis.speak(u); }
+        else setTimeout(sigue, 1500 + p.texto.length * 55);
+      };
+      sigue();
+    } catch (e) { $("velo").style.opacity = 0; aviso(e.message); }
+  }
+  /* Amueblar: la IA elige piezas del catálogo y su posición relativa; se colocan solo en suelo libre */
+  async function amueblarIA() {
+    const s = salas[T.sala] || salas[0]; if (!s || !P) return; aviso("Pensando la distribución…");
+    try {
+      const lado = Math.max(2, Math.sqrt(s.area || 12)), r = await gemini([{ role: "user", parts: [parteImagen(vistaJPEG()), { text: `Amuebla la estancia "${s.nombre}" de unos ${Math.round(s.area || 12)} m² (aprox. ${lado.toFixed(1)} m de lado). Elige entre 3 y 7 piezas de este catálogo: ${Object.keys(CATALOGO).join(", ")}. Para cada pieza da su desplazamiento en metros desde el centro de la estancia (dx, dz, entre -${(lado / 2 - .5).toFixed(1)} y ${(lado / 2 - .5).toFixed(1)}) y su giro en grados (0, 90, 180 o 270), con una distribución lógica para su uso. Explica la idea en una frase.` }] }],
+        { type: "object", properties: { idea: { type: "string" }, piezas: { type: "array", items: { type: "object", properties: { pieza: { type: "string" }, dx: { type: "number" }, dz: { type: "number" }, giro: { type: "number" } }, required: ["pieza", "dx", "dz", "giro"] } } }, required: ["idea", "piezas"] });
+      let n = 0;
+      (r.piezas || []).forEach(q => {
+        if (!CATALOGO[q.pieza]) return; const x = s.x + Math.max(-lado / 2, Math.min(lado / 2, +q.dx || 0)), z = s.z + Math.max(-lado / 2, Math.min(lado / 2, +q.dz || 0)), k = celda(x, z);
+        if (k < 0 || !P.free[k]) return; const y = sueloEn(x, P.floorY + .3, z); if (y === null) return;
+        const m = { k: q.pieza, x, y, z, r: (+q.giro || 0) * Math.PI / 180 }; D.muebles.push(m); creaMueble(m); n++;
+      });
+      guardaD(); muestraTexto("Propuesta de amueblado", `${String(r.idea)}\n\n${n} piezas colocadas. Pulsa una para girarla, moverla o borrarla.`);
+    } catch (e) { aviso(e.message); }
+  }
   function conectarIA() {
     const f = $("ficha"); f.hidden = false;
     f.innerHTML = '<h3>Conectar Gemini</h3><label class="ajuste">Clave de API<input id="iaClave" type="password" autocomplete="off"></label><label class="ajuste">Modelo<input id="iaModelo" type="text" autocomplete="off"></label><p>La clave se guarda solo en este navegador y va directa a Google. Consíguela gratis en aistudio.google.com. Nunca la escribas en el código del repositorio.</p><div class="fila"><button id="iaGuarda" class="tool" type="button">Guardar</button><button id="iaBorra" class="tool" type="button">Borrar clave</button><button id="iaX" class="tool" type="button">Cerrar</button></div>';
@@ -149,11 +192,12 @@
   }
   const iaLista = () => !!claveIA() || !!nube;
   function agregaIA(add) {
-    add("Inteligencia artificial", "Conectar Gemini", claveIA() ? "Clave guardada en este navegador" : "Opcional: usa tu propia clave", conectarIA);
     if (iaLista()) {
       add("Inteligencia artificial", "Asistente que actúa", "Pregunta o pide cambios y los hace", () => { const f = $("ficha"); f.hidden = false; f.textContent = ""; const h = texto("h3"), x = texto("button", "tool"); h.textContent = "Asistente"; f.append(h); chatIA(f, false); x.type = "button"; x.textContent = "Cerrar"; x.onclick = () => f.hidden = true; f.append(x); });
       if (salas.length) add("Inteligencia artificial", "Nombrar estancias", "Reconoce cada estancia por lo que ve", nombrarIA);
-      add("Inteligencia artificial", "Escribir anuncio", "Texto de venta con los datos reales", anuncioIA);
+      add("Inteligencia artificial", "Escribir anuncio", "Portal, redes, inglés o correo a un cliente", () => hojaLista("Anuncio", [["Portal inmobiliario", () => anuncioIA("portal")], ["Redes sociales", () => anuncioIA("redes")], ["En inglés", () => anuncioIA("ingles")], ["Correo a un cliente", () => anuncioIA("correo")]]));
+      if (salas.length) add("Inteligencia artificial", "Visita guiada con voz", "La IA te lleva por cada estancia y la presenta", visitaGuiadaIA);
+      if (P && C) add("Inteligencia artificial", "Amueblar esta estancia", "Propone y coloca muebles a escala", amueblarIA);
       add("Inteligencia artificial", "Inventario de esta vista", "Lista lo que aparece en pantalla", inventarioIA);
       add("Inteligencia artificial", "Ideas de mejora", "Decoración y reforma para esta vista", reformaIA);
       add("Inteligencia artificial", "Revisar estado", "Busca desperfectos visibles", estadoIA);

@@ -55,7 +55,11 @@
     const interior = pf.capas ? (A.dentro || B.dentro) : pf.propio ? (A.p.distanceTo(c) < 4 || B.p.distanceTo(c) < 4) : Math.max(A.w * (1 - t), B.w * t) > .5;
     if (pf.capas) { const k = A.k + (B.k - A.k) * t, ap = A.a + (B.a - A.a) * t, ex = A.x + (B.x - A.x) * t, yC = ex * 13 + k * 40, yP = ex * 6.5 + ap * 30, cl = pf.capas; if (Math.abs(yC - (pf.yC ?? -1)) + Math.abs(yP - (pf.yP ?? -1)) > .01) { cl.cub.forEach(o => { o.position.y = yC; o.visible = yC < 16; }); cl.pa.forEach(o => { o.position.y = yP; o.visible = yP < 11; }); pf.yC = yC; pf.yP = yP; renderer.shadowMap.needsUpdate = true; } const noche = (A.noche ? 1 - t : 0) + (B.noche ? t : 0), objetivo = noche > .5 ? "Noche" : Aj.amb; if (pf.ambAct !== objetivo) { pf.ambAct = objetivo; const L = solEn(pf.caja, objetivo); pasaEnv(escaparate, L.e); pf.cielo = L.cielo; } }
     if (!interior) { const g = (!calmo && Aj.giro ? Math.sin(now * .00012) * .08 : 0) + pf.giro, dx = posC.x - c.x, dz = posC.z - c.z, co = Math.cos(g), si = Math.sin(g); posC.x = c.x + dx * co - dz * si; posC.z = c.z + dx * si + dz * co; }
+    /* Paso por paredes: entre fuera y dentro, o entre estancias lejanas, la imagen funde a negro */
+    const cruza = pf.capas && (A.dentro || B.dentro) && (A.dentro !== B.dentro || A.p.distanceTo(B.p) > 5), velo = cruza ? Math.pow(Math.sin(Math.min(1, Math.max(0, (t - .08) / .84)) * Math.PI), 2.2) : 0;
+    if (Math.abs(velo - (pf.velo || 0)) > .01) { pf.velo = velo; const e = $("velo"); e.style.transition = "none"; e.style.opacity = velo.toFixed(3); }
     camera.position.copy(posC); camera.up.copy(EJE_Y); camera.lookAt(mirC);
+    if (window.__camFija) { camera.position.copy(window.__camFija.p); camera.lookAt(window.__camFija.m); }
     const cA = A.c > 50 ? pf.altoCorte : A.c, cB = B.c > 50 ? pf.altoCorte : B.c; T.clip = pf.cortar ? pf.cortar : (A.c > 50 && B.c > 50) ? 1000 : cA + (cB - cA) * t;
     U.uW.value = A.w + (B.w - A.w) * t; U.uE.value = A.e + (B.e - A.e) * t; scene.background.copy(FONDO_P).lerp(CIELO.setHex(pf.cielo ?? 0xffffff), U.uW.value);
     escaparate.children.forEach(o => { if (o.userData.fino) o.visible = U.uE.value < .02; });
@@ -88,7 +92,7 @@
     const { tabla, modelos, estancias } = await recoger(archivos); await preparaTGA(tabla);
     const prio = FORMATOS.find(e => modelos.some(m => m.e === e)); if (!prio) throw new Error("No encuentro un modelo 3D en ese archivo.");
     const m = modelos.find(x => x.e === prio), g = await leeModelo(m, tabla, new Set()), { env } = acabado(g); if (env) await entorno();
-    orientar(g, m.e); g.scale.setScalar(escalar(g)); const h = new THREE.Group(); h.add(g);
+    orientar(g, m.e); g.scale.setScalar(escalar(g)); const h = new THREE.Group(); h.add(g); optimizaModelo(h);
     const a = await calcular(triangulos(h)); escaparate.clear(); escaparate.add(h); await registraReal("portada", h, estancias || []); await esperaReal();
     pf.capas = null; const cub = [], pa = []; h.traverse(o => { if (o.isMesh) { if (/^CUB_/.test(o.name)) cub.push(o); else if (/^PA_/.test(o.name)) pa.push(o); } });
     PARADAS = cub.length && pa.length ? PARADAS_VILLA : paradasDe(a); if (cub.length && pa.length) pf.capas = { cub, pa }; pf.yC = pf.yP = undefined; pf.ambAct = null; pf.caja = new THREE.Box3().setFromObject(h); const [ax, ay, az, bx, by, bz] = a.caja; pf.centro = V((ax + bx) / 2, ay, (az + bz) / 2); pf.base = a.planos[0] ? a.planos[0].floorY : ay; pf.altoCorte = by + 1; pf.propio = true;
