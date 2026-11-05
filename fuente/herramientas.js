@@ -84,9 +84,13 @@
     "Estante": [[1.2, 1.9, .3, 0, .95, 0, "#3a3a38"]],
     "Planta": [[.34, .36, .34, 0, .18, 0, "#a85b3a"], [.5, .9, .5, 0, .8, 0, "#3f6b45"]]
   };
+  /* Cada color del catálogo usa un material real: tela, nogal, metal, cerámica u hojas */
+  const MAT_MUEBLE = { "#8b8678": "tela_gris", "#55524a": "tela_acento", "#a57a4f": "nogal", "#222222": "metal_negro", "#e7e4dc": "tela_crema", "#b8a488": "lacado_arena", "#3a3a38": "metal_negro", "#a85b3a": "maceta", "#3f6b45": "hoja_tropical" };
+  const matMueble = c => (MAT_MUEBLE[c] && materialReal({ name: MAT_MUEBLE[c], color: new THREE.Color(c) })) || new THREE.MeshStandardMaterial({ color: c, roughness: .75 });
+  pide("geometries/RoundedBoxGeometry.js").catch(() => {});
   function creaMueble(m) {
     const g = new THREE.Group();
-    (CATALOGO[m.k] || []).forEach(([w, h, d, x, y, z, c]) => { const e = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color: c, roughness: .75 })); e.position.set(x, y, z); g.add(e); });
+    (CATALOGO[m.k] || []).forEach(([w, h, d, x, y, z, c]) => { const geo = THREE.RoundedBoxGeometry ? new THREE.RoundedBoxGeometry(w, h, d, 3, Math.min(.04, w / 4, h / 4, d / 4)) : new THREE.BoxGeometry(w, h, d), e = new THREE.Mesh(geo, matMueble(c)); e.position.set(x, y, z); e.castShadow = e.receiveShadow = true; g.add(e); });
     g.position.set(m.x, m.y, m.z); g.rotation.y = m.r || 0; g.userData.m = m; capaMuebles.add(g); return g;
   }
   function pintaMuebles() { capaMuebles.clear(); D.muebles.forEach(creaMueble); }
@@ -336,10 +340,7 @@
     add("Capturar", "Grabar vídeo", H.rec ? "Detiene y guarda la grabación" : "Empieza a grabar lo que ves", alternaVideo, "4");
     if (P) add("Capturar", "Exportar plano", "PNG con superficies y escala", exportaPlano);
     add("Capturar", "Modo presentación", "Oculta la interfaz. Esc la recupera", () => $("app").classList.add("limpio"), "H");
-    if (C && P) add("Jugar", "Reto de búsqueda", "Encuentra las luces contra el reloj", iniciaReto, "5");
-    add("Jugar", "Sonido", "Pasos y tono de sala", alternaSonido, "6");
-    if (enClaude) add("Jugar", "Sala multijugador", "Camina con otras personas", alternaSala);
-    if (xrOK) add("Jugar", "Gafas de realidad virtual", "Entra con tu visor", entrarVR);
+    if (xrOK) add("Capturar", "Gafas de realidad virtual", "Entra con tu visor", entrarVR);
     agregaIA(add); agregaNube(add);
     if (salas.length) add("Datos", "Estadísticas", "Tiempo por estancia y mapa de calor", informe);
     if (enClaude || CONFIG.contacto || (nube && H.proyecto)) add("Datos", "Pedir visita", "Contacto con quien publica el modelo", contacto);

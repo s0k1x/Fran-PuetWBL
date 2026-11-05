@@ -1,4 +1,4 @@
-<title>Planta Caminable</title>
+<title>INNRA3D · Recorre cualquier casa en 3D</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400&family=Instrument+Serif:ital@0;1&display=swap">
@@ -222,7 +222,7 @@ input[type="range"] { accent-color: var(--texto); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
-<div id="cargador" role="status" aria-label="Cargando"><div class="caja"><span data-i="logo" class="logoC"></span><span class="nombre">Planta Caminable</span><div class="linea"><i id="carBar"></i></div><span class="pct" id="carPct">0 %</span></div></div>
+<div id="cargador" role="status" aria-label="Cargando"><div class="caja"><span data-i="logo" class="logoC"></span><span class="nombre">INNRA<b>3D</b></span><div class="linea"><i id="carBar"></i></div><span class="pct" id="carPct">0 %</span></div></div>
 <div id="app">
   <canvas id="vista" tabindex="0" aria-label="Vista 3D. Usa W, A, S y D para caminar y arrastra para mirar."></canvas>
   <div id="etiquetas" hidden></div>
@@ -232,7 +232,7 @@ input[type="range"] { accent-color: var(--texto); }
   <div id="etiP" hidden></div>
   <section id="portada">
     <header id="barraP">
-      <a id="marca" href="./" data-i="logo">Planta Caminable</a>
+      <a id="marca" href="./" data-i="logo" aria-label="INNRA3D, inicio"><span class="pal">INNRA<b>3D</b></span></a>
       <nav aria-label="Principal">
         <button type="button" data-p="vista" aria-expanded="false">Explorar<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="amb" aria-expanded="false">Ambiente<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="rec" aria-expanded="false">Recorrido</button><button type="button" data-p="herr" aria-expanded="false">Herramientas<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="ia" aria-expanded="false"><i class="punto-ia"></i>IA</button><button type="button" data-p="aju" aria-expanded="false">Ajustes</button>
       </nav>
@@ -258,7 +258,7 @@ input[type="range"] { accent-color: var(--texto); }
             <label id="cargar" for="archivo">Cargar mi escaneo</label>
             <div class="secund"><button id="bUnir" type="button">Unir varios escaneos</button><button id="bCuenta" type="button">Mis proyectos</button><button id="verH" type="button">Todas las funciones</button></div>
           </div>
-          <div id="progreso" hidden><div id="barra"><i></i></div><span id="estado" class="dato">Leyendo archivo</span></div>
+          <div id="progreso" hidden><span class="vaiven" id="barra"></span><span id="estado" class="dato">Leyendo archivo</span></div>
         </div>
       </div>
     </section>
@@ -294,6 +294,26 @@ input[type="range"] { accent-color: var(--texto); }
     <section class="sec" id="s-fin">
       <div class="txt"><span class="eti"><b>09</b>Empezar</span><h2>De noche, con sus luces. Tu espacio, <em>en un enlace</em>.</h2><p>GLB, OBJ, FBX, GLTF, DAE, PLY, STL, 3DS, 3MF, AMF, PCD, XYZ o ZIP.</p><label class="azul grande" for="archivo" data-i="subir">Cargar mi escaneo</label></div>
     </section>
+    <footer id="pie">
+      <section class="opiniones" aria-labelledby="opTit">
+        <div class="cabeza">
+          <div><span class="eti"><b>10</b>Opiniones</span><h2 id="opTit">Lo que dicen <em>quienes ya caminan</em>.</h2></div>
+          <div class="media" id="resMedia" hidden><b id="resNota">–</b><span><span class="ver-estrellas" id="resEst"></span><span id="resCuenta"></span></span></div>
+        </div>
+        <div id="resenas" aria-live="polite"><div class="resena vacia"><span class="puntos" aria-label="Cargando"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div></div>
+        <form id="nuevaRes" hidden>
+          <div class="fila2"><b style="font-weight:500">Tu valoración</b><div class="estrellas" role="radiogroup" aria-label="Estrellas"></div></div>
+          <label class="ajuste" style="padding:0"><span>Cuéntanos tu experiencia</span><textarea id="resTxt" maxlength="500" rows="3" required></textarea></label>
+          <div class="fila2"><span class="nota2" id="resMsg"></span><button class="btn-luz" type="submit" id="resIr">Publicar opinión</button></div>
+        </form>
+        <button class="btn-sec" type="button" id="resAbre" style="margin-top:18px">Escribir una opinión</button>
+      </section>
+      <div class="base">
+        <span class="m" data-i="logo"><span class="pal">INNRA<b>3D</b></span></span>
+        <nav aria-label="Legal"><button type="button" data-legal="terminos">Términos y condiciones</button><button type="button" data-legal="privacidad">Privacidad</button><button type="button" data-legal="cookies">Cookies</button><button type="button" id="cfgGalletas">Preferencias de cookies</button></nav>
+        <span>© <span id="anio">2026</span> INNRA3D</span>
+      </div>
+    </footer>
   </section>
 
   <section id="catalogo" hidden>
@@ -303,10 +323,13 @@ input[type="range"] { accent-color: var(--texto); }
       <div><dt>Medir</dt><dd>Distancia real entre dos puntos del modelo.</dd></div>
       <div><dt>Puntos de información</dt><dd>Notas con texto, foto y enlace sobre cualquier superficie.</dd></div>
       <div><dt>Muebles a escala</dt><dd>Coloca, gira y mueve mobiliario dentro del espacio.</dd></div>
-      <div><dt>Ambiente</dt><dd>Filtros de amanecer, atardecer, noche y blanco.</dd></div>
+      <div><dt>Ambiente y luces</dt><dd>Día, amanecer, atardecer o noche, con las lámparas encendidas o apagadas.</dd></div>
       <div><dt>Corte de sección</dt><dd>Abre el modelo a la altura que quieras.</dd></div>
       <div><dt>Foto, vídeo y plano</dt><dd>Exporta imágenes, recorridos y planos con superficies.</dd></div>
-      <div><dt>Reto de búsqueda</dt><dd>Encuentra las luces escondidas contra el reloj.</dd></div>
+      <div><dt>Visita guiada con voz</dt><dd>La IA te lleva por cada estancia y la presenta en voz alta.</dd></div>
+      <div><dt>Amueblar con IA</dt><dd>Propone una distribución y coloca los muebles a escala.</dd></div>
+      <div><dt>Redecorar con IA</dt><dd>Imagina la estancia con otro estilo a partir de lo que ves.</dd></div>
+      <div><dt>Anuncios con IA</dt><dd>Portal inmobiliario, redes, inglés o correo a un cliente.</dd></div>
       <div><dt>Estadísticas</dt><dd>Tiempo por estancia, mapa de calor y CSV.</dd></div>
       <div><dt>Proyecto</dt><dd>Guarda modelo y anotaciones en un ZIP y ábrelo después.</dd></div>
       <div><dt>Conversión a GLB</dt><dd>Pasa cualquier formato a GLB con texturas limitadas.</dd></div>
@@ -327,7 +350,7 @@ input[type="range"] { accent-color: var(--texto); }
         <label class="elegir" for="uPlanoIn" id="uPlano">Elegir plano</label><input id="uPlanoIn" type="file" accept="image/*,.pdf" hidden>
       </div>
       <label class="ajuste">Anchura real del plano en metros (opcional)<input id="uAncho" type="text" inputmode="decimal" autocomplete="off"></label>
-      <label class="ajuste">Clave de Gemini (opcional)<input id="uClave" type="password" autocomplete="off"></label>
+      <input id="uClave" type="hidden">
       <p class="dato" id="uAyuda"></p>
       <button id="uIr" type="button" disabled>Unir y revisar</button>
     </div>
@@ -344,8 +367,10 @@ input[type="range"] { accent-color: var(--texto); }
     </div>
   </section>
 
-  <button id="esq" type="button" hidden data-i="logo"><span>Planta Caminable</span></button>
+  <button id="esq" type="button" hidden data-i="logo" aria-label="Volver al inicio"><span class="pal">INNRA<b>3D</b></span></button>
   <div id="acceso" hidden role="dialog" aria-modal="true" aria-labelledby="accTit"></div>
+  <div id="legal" hidden role="dialog" aria-modal="true" aria-label="Textos legales"></div>
+  <div id="galletas" hidden role="dialog" aria-label="Cookies"></div>
   <div id="modoH" hidden><span id="modoTxt"></span><button id="salirH" type="button">Salir</button></div>
   <div id="crono" hidden></div>
   <div id="nGente" role="status" hidden></div>
@@ -380,7 +405,7 @@ input[type="range"] { accent-color: var(--texto); }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 /* Modelo fijo: guárdalo en modelos/. modeloPortada va en el scroll, modeloPrueba en Ver casa de prueba y modelUrl se abre al entrar. contacto: tu correo o teléfono. */
-const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueba: "modelos/villa.zip", eye: 1.6, contacto: "", supabaseUrl: "https://ufqnwnxlewtasfaaqral.supabase.co", supabaseKey: "sb_publishable_XDh3OzteRkkWZ93IBExG0A_gO0uwqZX", funcionKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmcW53bnhsZXd0YXNmYWFxcmFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM4NzYyMDksImV4cCI6MjEwOTQ1MjIwOX0.Z-Rd--UEe060iarh5HHFaE84ICQwLqhvEEVNTHuUiGs" };
+const CONFIG = { accesoObligatorio: false, modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueba: "modelos/villa.zip", eye: 1.6, contacto: "", supabaseUrl: "https://ufqnwnxlewtasfaaqral.supabase.co", supabaseKey: "sb_publishable_XDh3OzteRkkWZ93IBExG0A_gO0uwqZX", funcionKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmcW53bnhsZXd0YXNmYWFxcmFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM4NzYyMDksImV4cCI6MjEwOTQ1MjIwOX0.Z-Rd--UEe060iarh5HHFaE84ICQwLqhvEEVNTHuUiGs" };
 /*__CASA__*/
 /*__LUZ__*/
 /*__ANALISIS__*/
@@ -390,7 +415,7 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
   const fmt = (v, d = 2) => v.toLocaleString("es-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
   const calmo = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const tactil = matchMedia("(pointer: coarse)").matches;
-  const AJ_BASE = { efectos: null, calidad: 1.5, giro: true, texto: true, vel: 1, sens: 1, fov: 72, inv: false, voz: false, velRec: 1, amb: "Natural", fondo: "#000000", brillo: 1 };
+  const AJ_BASE = { efectos: null, calidad: null, giro: true, texto: true, vel: 1, sens: 1, fov: 72, inv: false, voz: false, velRec: 1, amb: "Natural", fondo: "#000000", brillo: 1 };
   const Aj = Object.assign({}, AJ_BASE); try { Object.assign(Aj, JSON.parse(localStorage.getItem("pc:ajustes")) || {}); } catch (e) {}
   const guardaAj = () => { try { localStorage.setItem("pc:ajustes", JSON.stringify(Aj)); } catch (e) {} };
   const guarda = {
@@ -435,6 +460,7 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
   const FORMATOS = ["glb", "gltf", "fbx", "obj", "dae", "3mf", "3ds", "amf", "ply", "stl", "pcd", "xyz"];
   const IMAGEN = ["png", "jpg", "jpeg", "webp", "bmp", "gif", "tga"];
 /*__REAL__*/
+/*__OPTIMIZA__*/
 
   async function recoger(entrada) {
     /* Convierte lo que llega (archivos, carpetas, ZIP) en una tabla nombre → bytes */
@@ -942,6 +968,7 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
     T.brillo = 1; aplicaBrillo(); camera.clearViewOffset(); U.uE.value = 0; T.clip = 1000;
     T.modo = "andar"; T.clip = 1000; T.teclas = {}; T.fov = T.fovO = Aj.fov; camera.fov = Aj.fov; camera.updateProjectionMatrix(); vista.style.filter = ""; if (document.getElementById("panelP")) $("panelP").hidden = true;
     scene.background.copy(T.muestra ? BLANCO : FONDO); U.uW.value = T.muestra ? 1 : 0; T.lit = !T.muestra && T.modelo ? esLit(T.modelo) : false;
+    $("velo").style.transition = ""; $("velo").style.opacity = 0; pf.velo = 0;
     prepararHerramientas(extra); interfaz("andar"); ocupado(false); pista();
     $("vista").focus({ preventScroll: true });
   }
@@ -971,7 +998,7 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
   function medir() {
     PQ.w = 0;
     const w = $("vista").clientWidth, h = $("vista").clientHeight;
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, Aj.calidad)); renderer.setSize(w, h, false);
+    const pr = Aj.calidad || (tactil ? 2 : 1.75); renderer.setPixelRatio(Math.min(devicePixelRatio || 1, pr) * (R ? R.escala : 1)); renderer.setSize(w, h, false);
     camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
   }
   addEventListener("resize", medir);
@@ -1153,6 +1180,7 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
     raiz.add(grupo); T.modelo = grupo; T.scale = 1; T.tilt = 0; T.tiltPrev = 0;
     orientar(grupo, e);
     T.auto = op.scale || escalar(grupo); grupo.scale.setScalar(T.auto);
+    await estado("Optimizando el modelo"); optimizaModelo(grupo);
     if (op.eye) T.eye = op.eye;
     await estado("Aplicando materiales"); await registraReal("modelo", grupo, op.rooms); await esperaReal();
     await reconstruir();
@@ -1195,6 +1223,7 @@ const CONFIG = { modelUrl: null, modeloPortada: "modelos/villa.zip", modeloPrueb
 /*__PORTADA__*/
 /*__PANEL__*/
 /*__INTERFAZ__*/
+/*__SITIO__*/
   /* ---------- Bucle ---------- */
   function andar(dt) {
     let f = 0, s = 0, u = 0; const k = T.teclas;

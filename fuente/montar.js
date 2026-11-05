@@ -5,7 +5,9 @@ const out = f("web.html")
   .replace("/*__ESTILO__*/", () => f("estilo.css"))
   .replace("/*__ANALISIS__*/", () => f("analisis.js"))
   .replace("/*__INTERFAZ__*/", () => f("interfaz.js"))
+  .replace("/*__SITIO__*/", () => f("sitio.js"))
   .replace("/*__REAL__*/", () => f("realismo.js"))
+  .replace("/*__OPTIMIZA__*/", () => f("optimiza.js"))
   .replace("/*__HERR__*/", () => f("herramientas.js"))
   .replace("/*__IA__*/", () => f("ia.js"))
   .replace("/*__NUBE__*/", () => f("nube.js"))
@@ -15,5 +17,5 @@ const out = f("web.html")
   .replace("/*__LUZ__*/", () => "const LUZ = " + f("luz.json") + ";");
 const raiz = path.join(__dirname, "..");
 fs.writeFileSync(path.join(raiz, "planta-caminable.html"), out);
-fs.writeFileSync(path.join(raiz, "index.html"), '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>' + out + "</body></html>");
+fs.writeFileSync(path.join(raiz, "index.html"), '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" href="logo.svg" type="image/svg+xml"><meta property="og:title" content="INNRA3D"><meta property="og:description" content="Recorre cualquier casa en 3D desde el navegador, con luz real e inteligencia artificial."></head><body>' + out + "</body></html>");
 console.log("ok", out.length);

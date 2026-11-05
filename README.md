@@ -1,4 +1,4 @@
-# Planta Caminable
+# INNRA3D
 
 Carga un escaneo o modelo 3D y camina por él en primera persona desde el navegador.
 
@@ -66,6 +66,21 @@ La web ya apunta al proyecto de Supabase. Las claves de `CONFIG` son públicas p
 - **Publicar:** los proyectos publicados son visibles para quien tenga el enlace. Máximo 50 MB por modelo.
 
 Nunca pongas en el código la clave de Gemini ni la clave `service_role` de Supabase.
+
+## Novedades de INNRA3D
+
+- **Rendimiento:** las piezas de la villa se unen por material (de unas 940 a unas 140 llamadas de dibujo por fotograma). El agua ya no repite la escena. Si un equipo va justo, baja primero la resolución interna y solo después los efectos.
+- **Imagen:** exposición automática como una cámara, nitidez suave, resolución alta en móvil, interiores iluminados con las lámparas y noche sin deslumbrar.
+- **Superdeportivos:** los coches del modelo se detectan por su pintura y se cambian por superdeportivos procedurales (`fuente/optimiza.js`).
+- **Móvil:** arreglado el fallo que impedía andar y mirar con el dedo.
+- **IA sin configurar nada:** usa la función `gemini` de Supabase. Nuevas herramientas: visita guiada con voz, amueblar la estancia y anuncios en cuatro formatos.
+- **Cuenta:** entrar, crear cuenta (aceptando términos), enlace por correo, recuperar contraseña y menú de cuenta con apariencia, accesibilidad y notificaciones.
+- **Opiniones:** tabla `resenas` en Supabase, una por cuenta, visibles para todos.
+- **Cookies y textos legales** al pie de la página.
+
+### Activar Google y GitHub
+
+En Supabase, **Authentication → Sign In / Providers**, activa Google y GitHub con su Client ID y secreto, y añade la dirección de GitHub Pages en **URL Configuration**. Los botones se activan solos; mientras tanto muestran «Próximamente». Para que iniciar sesión sea obligatorio, pon `accesoObligatorio: true` en `CONFIG` dentro de `fuente/web.html`.
 
 ## Realismo y diseño
 
