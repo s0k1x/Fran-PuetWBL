@@ -30,7 +30,7 @@
 
   function panelVista(p) {
     titulo(p, "Vista");
-    const f = texto("div", "rejilla"); [["Exterior", 0], ["Sin techo", 1], ["Interior", 2], ["Plano", 4], ["Piezas", 5], ["Estancias", 6]].forEach(([n, s]) => { const b = texto("button", "tool"); b.type = "button"; b.textContent = n; b.onclick = () => irSeccion(s); f.append(b); }); p.append(f);
+    const f = texto("div", "rejilla"); [["Exterior", 0], ["Sin techo", 1], ["Interior", 2], ["Salón", 3], ["Plano", 4], ["Plantas", 5], ["Estancias", 6], ["Piscina", 7], ["Noche", 8]].forEach(([n, s]) => { const b = texto("button", "tool"); b.type = "button"; b.textContent = n; b.onclick = () => irSeccion(s); f.append(b); }); p.append(f);
     deslizador(p, "pGiro", "Girar el modelo", -180, 180, 1, Math.round(pf.giro * 57.3), v => v + "°", v => pf.giro = v / 57.3);
     deslizador(p, "pCorte", "Cortar a la altura", 0, 6, .05, pf.cortar ? pf.cortar - pf.base : 0, v => v ? fmt(v) + " m" : "Sin corte", v => pf.cortar = v ? pf.base + v : 0);
     const n = texto("p", "nota2"); n.textContent = "También puedes arrastrar con el ratón sobre el modelo."; p.append(n);
@@ -82,7 +82,7 @@
   $("bpCuenta").addEventListener("click", () => $("bCuenta").click());
   function aplicaAj() {
     guardaAj(); FONDO_P.set(Aj.fondo); document.documentElement.style.setProperty("--negro", Aj.fondo); $("app").classList.toggle("sintexto", !Aj.texto);
-    if (T.modo === "portada") { vista.style.filter = AMB[Aj.amb] || ""; if (pf.listo) marcoPortada(); }
+    if (T.modo === "portada") { if (pf.propio && pf.caja) { vista.style.filter = ""; const L = solEn(pf.caja, Aj.amb); pasaEnv(escaparate, L.e); pf.cielo = L.cielo; } else { vista.style.filter = AMB[Aj.amb] || ""; pf.cielo = 0xffffff; } if (pf.listo) marcoPortada(); }
   }
 
   /* ---------- Chat con acciones: se le pide y lo hace ---------- */

@@ -13,8 +13,21 @@
     { p: V(27, 10, -7), m: V(8, .5, 6.5), c: 99, w: 0, e: 0 },
     { p: V(-14, 6, 8), m: V(8, 1, 6.5), c: 99, w: 0, e: 0 }
   ];
+  /* Villa: k levanta la cubierta, a levanta la planta alta, x separa las capas, w da cielo claro */
+  const PARADAS_VILLA = [
+    { p: V(-5, 10, 47), m: V(15, 3.2, 8), k: 0, a: 0, x: 0, w: 0, c: 99, e: 0 },
+    { p: V(-15, 27, 40), m: V(15, 2, 8), k: 1, a: 0, x: 0, w: 0, c: 99, e: 0 },
+    { p: V(14, 1.9, 15.8), m: V(14, 3.4, 8), k: 0, a: 0, x: 0, w: 1, c: 99, e: 0, dentro: 1 },
+    { p: V(12.4, 1.9, 5.6), m: V(21, 1.5, -5), k: 0, a: 0, x: 0, w: 1, c: 99, e: 0, dentro: 1 },
+    { p: V(15, 50, 9), m: V(15, 0, 8.5), k: 1, a: 1, x: 0, w: 0, c: 99, e: 0 },
+    { p: V(-27, 22, 45), m: V(15, 8, 8), k: 0, a: 0, x: 1, w: 0, c: 99, e: 0 },
+    { p: V(43, 25, 34), m: V(15, 0, 8), k: 1, a: 1, x: 0, w: 0, c: 99, e: 0 },
+    { p: V(36, 7, -21), m: V(16, 2, -6), k: 0, a: 0, x: 0, w: 0, c: 99, e: 0 },
+    { p: V(-13, 4, 31), m: V(15, 3.4, 10), k: 0, a: 0, x: 0, w: 0, c: 99, e: 0, noche: 1 }
+  ];
   let PARADAS = PARADAS_CASA;
   const portada = $("portada"), secs = [...portada.querySelectorAll(".sec")], pf = { s: 0, listo: false, eti: [], giro: 0, play: false, centro: V(8, .6, 6.5), altoCorte: 3.4, propio: false, base: 0, cortar: 0 };
+  const CIELO = new THREE.Color(0xffffff);
   const posC = V(0, 0, 0), mirC = V(0, 0, 0), suave = t => t * t * (3 - 2 * t);
   /* Recorrido a partir de cualquier modelo: se calcula con su tamaño y sus habitaciones */
   function paradasDe(a) {
@@ -39,13 +52,14 @@
     posC.lerpVectors(A.p, B.p, t); mirC.lerpVectors(A.m, B.m, t);
     const entra = (A.c > 50 && B.c < 50) || (A.c < 50 && B.c > 50) || A.w !== B.w; if (entra) posC.y += Math.sin(t * Math.PI) * 3;
     /* Giro: el lento automático más el que hace el usuario arrastrando */
-    const interior = pf.propio ? (A.p.distanceTo(c) < 4 || B.p.distanceTo(c) < 4) : Math.max(A.w * (1 - t), B.w * t) > .5;
+    const interior = pf.capas ? (A.dentro || B.dentro) : pf.propio ? (A.p.distanceTo(c) < 4 || B.p.distanceTo(c) < 4) : Math.max(A.w * (1 - t), B.w * t) > .5;
+    if (pf.capas) { const k = A.k + (B.k - A.k) * t, ap = A.a + (B.a - A.a) * t, ex = A.x + (B.x - A.x) * t, yC = ex * 13 + k * 40, yP = ex * 6.5 + ap * 30, cl = pf.capas; if (Math.abs(yC - (pf.yC ?? -1)) + Math.abs(yP - (pf.yP ?? -1)) > .01) { cl.cub.forEach(o => { o.position.y = yC; o.visible = yC < 16; }); cl.pa.forEach(o => { o.position.y = yP; o.visible = yP < 11; }); pf.yC = yC; pf.yP = yP; renderer.shadowMap.needsUpdate = true; } const noche = (A.noche ? 1 - t : 0) + (B.noche ? t : 0), objetivo = noche > .5 ? "Noche" : Aj.amb; if (pf.ambAct !== objetivo) { pf.ambAct = objetivo; const L = solEn(pf.caja, objetivo); pasaEnv(escaparate, L.e); pf.cielo = L.cielo; } }
     if (!interior) { const g = (!calmo && Aj.giro ? Math.sin(now * .00012) * .08 : 0) + pf.giro, dx = posC.x - c.x, dz = posC.z - c.z, co = Math.cos(g), si = Math.sin(g); posC.x = c.x + dx * co - dz * si; posC.z = c.z + dx * si + dz * co; }
     camera.position.copy(posC); camera.up.copy(EJE_Y); camera.lookAt(mirC);
     const cA = A.c > 50 ? pf.altoCorte : A.c, cB = B.c > 50 ? pf.altoCorte : B.c; T.clip = pf.cortar ? pf.cortar : (A.c > 50 && B.c > 50) ? 1000 : cA + (cB - cA) * t;
-    U.uW.value = A.w + (B.w - A.w) * t; U.uE.value = A.e + (B.e - A.e) * t; scene.background.copy(FONDO_P).lerp(BLANCO, U.uW.value);
+    U.uW.value = A.w + (B.w - A.w) * t; U.uE.value = A.e + (B.e - A.e) * t; scene.background.copy(FONDO_P).lerp(CIELO.setHex(pf.cielo ?? 0xffffff), U.uW.value);
     escaparate.children.forEach(o => { if (o.userData.fino) o.visible = U.uE.value < .02; });
-    renderer.toneMappingExposure = (.56 + (EXPO_CASA - .56) * U.uW.value) * Aj.brillo;
+    renderer.toneMappingExposure = (pf.propio ? 1 : .56 + (EXPO_CASA - .56) * U.uW.value) * Aj.brillo;
     /* Texto y etiquetas según lo cerca que esté su sección */
     const alto = portada.clientHeight;
     if (Math.abs(portada.scrollTop - (pf.yUlt ?? -1)) > .5) { pf.yUlt = portada.scrollTop; secs.forEach(s => { const x = s.firstElementChild, r = s.getBoundingClientRect(), d = Math.abs(r.top + r.height / 2 - alto / 2) / alto, o = Math.max(0, Math.min(1, 1.5 - d * 2.1)); x.style.opacity = s === secs[0] ? Math.max(.25, o) : o; x.style.transform = `translateY(${(1 - o) * 26}px)`; }); }
@@ -70,13 +84,14 @@
   }
   /* Pone cualquier modelo en el scroll: el de CONFIG o el que elijas para probar */
   async function modeloEnPortada(archivos) {
-    const { tabla, modelos } = await recoger(archivos); await preparaTGA(tabla);
+    const { tabla, modelos, estancias } = await recoger(archivos); await preparaTGA(tabla);
     const prio = FORMATOS.find(e => modelos.some(m => m.e === e)); if (!prio) throw new Error("No encuentro un modelo 3D en ese archivo.");
     const m = modelos.find(x => x.e === prio), g = await leeModelo(m, tabla, new Set()), { env } = acabado(g); if (env) await entorno();
     orientar(g, m.e); g.scale.setScalar(escalar(g)); const h = new THREE.Group(); h.add(g);
     const a = await calcular(triangulos(h)); escaparate.clear(); escaparate.add(h);
-    PARADAS = paradasDe(a); const [ax, ay, az, bx, by, bz] = a.caja; pf.centro = V((ax + bx) / 2, ay, (az + bz) / 2); pf.base = a.planos[0] ? a.planos[0].floorY : ay; pf.altoCorte = by + 1; pf.propio = true;
-    ponEtiquetas2(a.planos[0] ? a.planos[0].rooms.slice(0, 12).map((r, i) => ({ name: "Estancia " + (i + 1), x: r.x, z: r.z })) : []);
+    pf.capas = null; const cub = [], pa = []; h.traverse(o => { if (o.isMesh) { if (/^CUB_/.test(o.name)) cub.push(o); else if (/^PA_/.test(o.name)) pa.push(o); } });
+    PARADAS = cub.length && pa.length ? PARADAS_VILLA : paradasDe(a); if (cub.length && pa.length) pf.capas = { cub, pa }; pf.yC = pf.yP = undefined; pf.ambAct = null; pf.caja = new THREE.Box3().setFromObject(h); const [ax, ay, az, bx, by, bz] = a.caja; pf.centro = V((ax + bx) / 2, ay, (az + bz) / 2); pf.base = a.planos[0] ? a.planos[0].floorY : ay; pf.altoCorte = by + 1; pf.propio = true;
+    if (estancias && estancias.length) ponEtiquetas2(estancias.filter(e => e.y < 2).filter(e => !/Pasillo|Aseo|Cuarto|Almac|Distribuidor/.test(e.name))); else ponEtiquetas2(a.planos[0] ? a.planos[0].rooms.slice(0, 12).map((r, i) => ({ name: "Estancia " + (i + 1), x: r.x, z: r.z })) : []);
   }
   async function montaPortada() {
     try {

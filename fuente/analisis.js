@@ -1,6 +1,6 @@
 /* Análisis del modelo. Corre en un Worker: no puede usar nada de fuera.
    Devuelve un árbol de colisión (BVH) y un plano con habitaciones por cada planta. */
-function analizar(t) {
+function analizar(t, pisos) {
   const n = t.length / 9;
   /* ---------- BVH ---------- */
   const idx = new Int32Array(n), cen = new Float32Array(n * 3);
@@ -55,6 +55,7 @@ function analizar(t) {
     const ref = Math.max(1e-9, ...picos.map(c => verEntre(c + .3, c + 1.9)));
     for (const c of picos) if (verEntre(c + .3, c + 1.9) >= ref * .15 && (!plantas.length || c - plantas[plantas.length - 1] >= 2)) plantas.push(c);
   }
+  if (pisos && pisos.length) { plantas.length = 0; plantas.push(...pisos); }
   const planos = plantas.map((f, i) => {
     const sig = i + 1 < plantas.length ? plantas[i + 1] : y1 + 1;
     const techos = picos.filter(c => c > f + 1.8 && c <= sig + .1);

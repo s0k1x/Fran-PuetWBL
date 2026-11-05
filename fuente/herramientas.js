@@ -106,7 +106,8 @@
     raiz.traverse(o => { if (!o.isMesh) return; const n = o.userData.nom; if (n === "roble" && D.suelo) o.material.color.setHex(TONOS.suelo[D.suelo]); if (n === "yeso" && D.pared) o.material.color.setHex(TONOS.pared[D.pared]); });
   }
   const AMB = { Natural: "", Amanecer: "sepia(.32) saturate(1.15) brightness(1.03)", Atardecer: "sepia(.55) saturate(1.45) hue-rotate(-10deg) brightness(.92)", Noche: "brightness(.42) saturate(.75) hue-rotate(195deg) sepia(.12)", Blanco: "grayscale(1) contrast(1.05) brightness(1.08)" };
-  const aplicaAmb = () => vista.style.filter = AMB[D.amb] || "";
+  const esLit = g => { let s = false; g.traverse(o => { if (o.isMesh && [].concat(o.material).some(m => m && m.isMeshStandardMaterial)) s = true; }); return s; };
+  function aplicaAmb() { if (T.modo !== "portada" && !T.muestra && T.modelo && esLit(T.modelo)) { vista.style.filter = ""; const n = D.amb || "Natural", L = solEn(new THREE.Box3().setFromObject(T.modelo), n); pasaEnv(T.modelo, L.e); scene.background.setHex(L.cielo); renderer.shadowMap.needsUpdate = true; return; } vista.style.filter = AMB[D.amb] || ""; }
 
   /* Reto */
   function finReto() { capaOrbes.clear(); H.reto = null; $("crono").hidden = true; }
