@@ -67,6 +67,20 @@ La web ya apunta al proyecto de Supabase. Las claves de `CONFIG` son públicas p
 
 Nunca pongas en el código la clave de Gemini ni la clave `service_role` de Supabase.
 
+## Estudio, IA y herramientas nuevas
+
+- **Hora del día** (Ambiente o Herramientas): el sol se mueve, el cielo cambia y las lámparas se encienden al anochecer.
+- **Entrada cinematográfica** al recorrer la villa, **cursor propio** con botones magnéticos, **sonidos opcionales** y **tema claro** (Ajustes).
+- **Modo foto:** rejilla, nivel, desenfoque por distancia y captura en 4K con la marca.
+- **Plano de arquitecto** en PNG o PDF con todas las plantas, cotas, norte, escala y cajetín.
+- **Estilos de la casa** (nórdico, mediterráneo, industrial, japandi, lujo clásico), **diseñar con IA** y **comparar dos estilos** con una línea movible.
+- **IA:** asistente de voz (tecla V), ficha comercial en PDF, presupuesto orientativo de reforma, vídeo promocional con música y antes/después al redecorar.
+- **Compartir:** enlace, QR e inserción con `?embed=1`.
+- **Medición:** superficies y alturas, guardadas con el modelo y exportables a CSV.
+- **Visita en directo** con Supabase Realtime: el enlace lleva `&vivo=código` y los invitados siguen al guía.
+- **Panel del propietario** con visitas, tiempo por estancia y solicitudes, y **galería** de proyectos publicados (se activa en «Mis proyectos»).
+- **App instalable** y uso sin conexión (`manifest.webmanifest` y `sw.js`).
+
 ## Novedades de INNRA3D
 
 - **Rendimiento:** las piezas de la villa se unen por material (de unas 940 a unas 140 llamadas de dibujo por fotograma). El agua ya no repite la escena. Si un equipo va justo, baja primero la resolución interna y solo después los efectos.

@@ -108,13 +108,28 @@
   function dibujaPlano(q, ni) {
     const W = 3508, H = 2480, m = 150, cw = 760, c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
     g.fillStyle = "#fff"; g.fillRect(0, 0, W, H);
-    const b = cajaPlano(q), aw = W - m * 2 - cw - 80, ah = H - m * 2 - 120, s = Math.min(aw / (b.xb - b.xa), ah / (b.zb - b.za)), ox = m + 60 + (aw - (b.xb - b.xa) * s) / 2, oz = m + 90 + (ah - (b.zb - b.za) * s) / 2;
+    /* Encuadre en las estancias (sin el jardín) cuando el modelo trae sus rectángulos */
+    let b = cajaPlano(q); const rs = salas.filter(r => r.nivel === ni && r.rects);
+    if (rs.length) { const k = { xa: 1e9, xb: -1e9, za: 1e9, zb: -1e9 }; rs.forEach(r => r.rects.forEach(([x0, x1, z0, z1]) => { k.xa = Math.min(k.xa, x0); k.xb = Math.max(k.xb, x1); k.za = Math.min(k.za, z0); k.zb = Math.max(k.zb, z1); })); b = { xa: k.xa - .6, xb: k.xb + .6, za: k.za - .6, zb: k.zb + .6 }; }
+    const aw = W - m * 2 - cw - 80, ah = H - m * 2 - 120, s = Math.min(aw / (b.xb - b.xa), ah / (b.zb - b.za)), ox = m + 60 + (aw - (b.xb - b.xa) * s) / 2, oz = m + 90 + (ah - (b.zb - b.za) * s) / 2;
     const X = x => ox + (x - b.xa) * s, Z = z => oz + (z - b.za) * s, cs = q.cell * s + .6;
+    g.save(); g.beginPath(); g.rect(X(b.xa), Z(b.za), (b.xb - b.xa) * s, (b.zb - b.za) * s); g.clip();
     g.fillStyle = "#ece9e2"; for (let k = 0; k < q.w * q.h; k++) if (q.walk[k] && !q.block[k]) g.fillRect(X(q.ox + (k % q.w) * q.cell), Z(q.oz + Math.floor(k / q.w) * q.cell), cs, cs);
     g.fillStyle = "#c9c5bc"; for (let k = 0; k < q.w * q.h; k++) if (q.block[k] === 1) g.fillRect(X(q.ox + (k % q.w) * q.cell), Z(q.oz + Math.floor(k / q.w) * q.cell), cs, cs);
     g.fillStyle = "#151515"; for (let k = 0; k < q.w * q.h; k++) if (q.block[k] === 2) g.fillRect(X(q.ox + (k % q.w) * q.cell), Z(q.oz + Math.floor(k / q.w) * q.cell), cs, cs);
-    g.textAlign = "center"; g.fillStyle = "#151515";
-    salas.filter(r => r.nivel === ni).forEach(r => { g.font = "500 30px Geist, Arial"; g.letterSpacing = "3px"; g.fillText(r.nombre.toUpperCase(), X(r.x), Z(r.z)); g.letterSpacing = "0px"; g.font = "400 26px Geist Mono, monospace"; g.fillStyle = "#6b6760"; g.fillText(fmt(r.area, 1) + " m²", X(r.x), Z(r.z) + 38); g.fillStyle = "#151515"; });
+    g.restore(); g.textAlign = "center"; g.fillStyle = "#151515";
+    /* Rótulos ajustados al ancho de cada estancia: se reducen y, si hace falta, se parten en dos líneas */
+    salas.filter(r => r.nivel === ni).forEach(r => {
+      const ancho = r.rects ? Math.max(...r.rects.map(([x0, x1]) => (x1 - x0) * s)) * .86 : 9e9, cx = r.rects ? X((r.rects[0][0] + r.rects[0][1]) / 2) : X(r.x), cy = r.rects ? Z((r.rects[0][2] + r.rects[0][3]) / 2) : Z(r.z);
+      let t = 30, lineas = [r.nombre.toUpperCase()]; g.letterSpacing = "2px";
+      const mide = () => Math.max(...lineas.map(l => { g.font = `500 ${t}px Geist, Arial`; return g.measureText(l).width; }));
+      while (mide() > ancho && t > 20) t -= 2;
+      if (mide() > ancho && lineas[0].includes(" ")) { const w = lineas[0].split(" "), m = Math.ceil(w.length / 2); lineas = [w.slice(0, m).join(" "), w.slice(m).join(" ")]; t = 26; while (mide() > ancho && t > 15) t -= 1; }
+      while (mide() > ancho && t > 13) t -= 1;
+      g.font = `500 ${t}px Geist, Arial`; g.fillStyle = "#151515"; const y0 = cy - (lineas.length - 1) * t * .6;
+      g.lineJoin = "round"; g.strokeStyle = "rgba(255,255,255,.92)"; g.lineWidth = Math.max(5, t * .32); lineas.forEach((l, i) => { g.strokeText(l, cx, y0 + i * t * 1.15); g.fillText(l, cx, y0 + i * t * 1.15); }); g.letterSpacing = "0px";
+      g.font = `400 ${Math.max(14, Math.round(t * .85))}px Geist Mono, monospace`; g.fillStyle = "#6b6760"; g.strokeText(fmt(r.area, 1) + " m²", cx, y0 + lineas.length * t * 1.15 + 4); g.fillText(fmt(r.area, 1) + " m²", cx, y0 + lineas.length * t * 1.15 + 4); g.fillStyle = "#151515";
+    });
     /* Cotas generales */
     const cota = (x1, y1, x2, y2, txt, vert) => { g.strokeStyle = "#151515"; g.lineWidth = 2; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); [[x1, y1], [x2, y2]].forEach(([x, y]) => { g.beginPath(); g.moveTo(x - 12, y + 12); g.lineTo(x + 12, y - 12); g.stroke(); g.beginPath(); vert ? (g.moveTo(x - 22, y), g.lineTo(x + 22, y)) : (g.moveTo(x, y - 22), g.lineTo(x, y + 22)); g.stroke(); }); g.save(); g.translate((x1 + x2) / 2, (y1 + y2) / 2); if (vert) g.rotate(-Math.PI / 2); g.font = "400 28px Geist Mono, monospace"; g.fillText(txt, 0, -14); g.restore(); };
     cota(X(b.xa), Z(b.za) - 70, X(b.xb), Z(b.za) - 70, fmt(b.xb - b.xa) + " m"); cota(X(b.xa) - 70, Z(b.za), X(b.xa) - 70, Z(b.zb), fmt(b.zb - b.za) + " m", true);

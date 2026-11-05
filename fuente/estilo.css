@@ -584,7 +584,8 @@ html.claro #barraP nav { background: rgba(0, 0, 0, .03); }
 html.claro #barraP nav button { color: #45443f; }
 html.claro #barraP nav button:hover { color: #000; }
 html.claro #barraP nav button[aria-expanded="true"], html.claro .seg button[aria-pressed="true"], html.claro #muestra, html.claro .azul, html.claro #acceso .principal, html.claro .btn-luz, html.claro #uIr, html.claro #edEntra, html.claro #galletas .bot .si { background: #121212 !important; color: #f3f2ee !important; }
-html.claro #sombraP { background: radial-gradient(120% 90% at 0% 60%, rgba(243, 242, 238, .9), rgba(243, 242, 238, .5) 38%, transparent 62%), linear-gradient(0deg, rgba(243, 242, 238, .6), transparent 30%); }
+html.claro #sombraP { background: radial-gradient(90% 80% at 0% 55%, rgba(243, 242, 238, .88), rgba(243, 242, 238, .35) 32%, transparent 48%); }
+html.claro .txt p { font-weight: 450; }
 html.claro .txt { text-shadow: none; }
 html.claro #portada h1, html.claro #portada h2, html.claro .cifras b, html.claro #pie h2, html.claro #galeria h2, html.claro #panelD h2 { color: #121212; }
 html.claro .txt p, html.claro .resena p { color: #3b3a36; }
@@ -597,3 +598,4 @@ html.claro #catalogo, html.claro #unir, html.claro #galeria, html.claro #panelD 
 html.claro #panelD .tip { background: #121212; color: #f3f2ee; }
 html.claro .pildora i, html.claro .fantasma .ini { color: #fff; }
 html.claro #cargador .linea i { background: #121212; }
+#cargador.fuera { pointer-events: none; }
