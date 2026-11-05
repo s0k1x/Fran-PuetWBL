@@ -78,7 +78,7 @@
   };
   /* Cada ambiente: cielo físico, entorno HDR, sol, niebla y exposición */
   const CIELOS = {
-    Natural: { hdr: "rooitou_park", turb: 2.4, ray: 1.1, mie: .004, g: .82, exp: .92, niebla: 0xb9cad8, dens: .0026, env: .55, noche: 0, gan: .32, sol: 1.5 },
+    Natural: { hdr: "rooitou_park", turb: 2.4, ray: 1.1, mie: .004, g: .82, exp: 1.02, niebla: 0xb9cad8, dens: .0026, env: .55, noche: 0, gan: .32, sol: 1.5 },
     Amanecer: { hdr: "kiara_1_dawn", turb: 4, ray: 2.2, mie: .006, g: .86, exp: 1, niebla: 0xd9b9a2, dens: .003, env: .55, noche: .25, gan: .3, sol: 1.5 },
     Atardecer: { hdr: "venice_sunset", turb: 6, ray: 2.8, mie: .008, g: .9, exp: 1.05, niebla: 0xc98a62, dens: .0032, env: .5, noche: .5, gan: .3, sol: 1.6 },
     Noche: { hdr: "moonless_golf", turb: 1, ray: .4, mie: .002, g: .7, exp: 1, niebla: 0x060a12, dens: .004, env: .6, noche: 1, gan: .03, sol: 1 },
@@ -381,7 +381,8 @@
   function tamPost() {
     const v = renderer.getDrawingBufferSize(new THREE.Vector2()), w = v.x, h = v.y; if (w === PQ.w && h === PQ.h && PQ.hdr) return; PQ.w = w; PQ.h = h;
     ["hdr", "pre", "ao1", "ao2"].forEach(k => PQ[k] && PQ[k].dispose()); (PQ.bl || []).forEach(x => { x.a.dispose(); x.b.dispose(); });
-    PQ.hdr = rt(w, h, { depthBuffer: true, samples: 4 });
+    /* Profundidad de 24 bits: con 16 las superficies cercanas se pelean a distancia y salen rayas */
+    PQ.hdr = rt(w, h, { depthBuffer: true, samples: 4, depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType) });
     const hw = w >> 1, hh = h >> 1;
     PQ.pre = rt(hw, hh, { type: THREE.UnsignedByteType, depthBuffer: true, depthTexture: new THREE.DepthTexture(hw, hh, THREE.UnsignedIntType), minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
     PQ.ao1 = rt(hw, hh, { type: THREE.UnsignedByteType }); PQ.ao2 = rt(hw, hh, { type: THREE.UnsignedByteType });
@@ -396,7 +397,7 @@
     const a = R.abS; U_R.uEnvIn.value = .82 + .18 * a;
     sol.intensity = R.solBase * (1 - .35 * a); hemi.intensity = R.hemiBase * (1 + 2.2 * a);
     const quiere = a < .4, e = ESC[escAct];
-    if (quiere !== R.sombras && e) { R.sombras = quiere; e.grupo.traverse(o => { if (o.isMesh) o.castShadow = quiere && !!o.userData.cs; }); renderer.shadowMap.needsUpdate = true; }
+    if (quiere !== R.sombras && e) { R.sombras = quiere; e.grupo.traverse(o => { if (o.isMesh) { o.castShadow = quiere && !!o.userData.cs; if (/^LT_/.test(o.name)) o.visible = quiere; } }); renderer.shadowMap.needsUpdate = true; }
   }
   /* ¿Está la cámara dentro de casa? Se mira en la máscara de interiores */
   function camDentro() {
@@ -406,7 +407,11 @@
   }
   function pintar() {
     R.t += 1 / 60; U_R.uT.value = performance.now() / 1000; casaAbierta();
-    if (R.activo) { const obj = usaPost() ? R.expMed : 1 + camDentro() * .38 * (1 - R.abS); R.expAuto += (obj - R.expAuto) * (calmo ? 1 : .05); } else R.expAuto = 1;
+    /* Plano cercano según el modo: de lejos, más precisión de profundidad */
+    const cerca = T.modo === "portada" ? .35 : T.modo === "orbita" || T.modo === "vuelo" ? .15 : .05;
+    if (camera.near !== cerca) { camera.near = cerca; camera.far = 1500; camera.updateProjectionMatrix(); }
+    /* Exposición automática: solo aclara dentro de casa; fuera manda el cielo */
+    if (R.activo) { const d = camDentro() * (1 - R.abS), med = usaPost() ? Math.max(1, R.expMed) : 1.38, obj = 1 + (med - 1) * d; R.expAuto += (obj - R.expAuto) * (calmo ? 1 : .05); } else R.expAuto = 1;
     if (!usaPost()) {
       const tm = renderer.toneMapping; if (tm !== THREE.ACESFilmicToneMapping) { renderer.toneMapping = THREE.ACESFilmicToneMapping; }
       const e = renderer.toneMappingExposure; renderer.toneMappingExposure = e * (R.activo ? R.exp * R.expAuto : 1);
