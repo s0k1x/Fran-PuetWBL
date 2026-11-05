@@ -60,7 +60,7 @@
 
   /* Vista actual en JPEG */
   function vistaJPEG(ancho = 512) {
-    raiz.visible = capa.visible = true; escaparate.visible = false; corte.constant = T.clip; renderer.render(scene, camera);
+    raiz.visible = capa.visible = true; escaparate.visible = false; corte.constant = T.clip; pintar();
     const c = document.createElement("canvas"), k = ancho / vista.width; c.width = ancho; c.height = Math.round(vista.height * k); c.getContext("2d").drawImage(vista, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", .7);
   }
   async function nombrarIA() {

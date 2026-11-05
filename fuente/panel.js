@@ -30,7 +30,7 @@
 
   function panelVista(p) {
     titulo(p, "Vista");
-    const f = texto("div", "rejilla"); [["Exterior", 0], ["Sin techo", 1], ["Interior", 2], ["Salón", 3], ["Plano", 4], ["Plantas", 5], ["Estancias", 6], ["Piscina", 7], ["Noche", 8]].forEach(([n, s]) => { const b = texto("button", "tool"); b.type = "button"; b.textContent = n; b.onclick = () => irSeccion(s); f.append(b); }); p.append(f);
+    const f = texto("div", "rejilla"); [["Exterior", 0, "casa"], ["Sin techo", 1, "techo"], ["Interior", 2, "puerta"], ["Salón", 3, "sofa"], ["Plano", 4, "plano"], ["Plantas", 5, "capas"], ["Estancias", 6, "pin"], ["Piscina", 7, "olas"], ["Noche", 8, "luna"]].forEach(([n, s, i]) => { const b = texto("button", "tool"); b.type = "button"; b.innerHTML = ico(i) + "<span></span>"; b.lastChild.textContent = n; b.onclick = () => { irSeccion(s); cierraPanel(); }; f.append(b); }); p.append(f);
     deslizador(p, "pGiro", "Girar el modelo", -180, 180, 1, Math.round(pf.giro * 57.3), v => v + "°", v => pf.giro = v / 57.3);
     deslizador(p, "pCorte", "Cortar a la altura", 0, 6, .05, pf.cortar ? pf.cortar - pf.base : 0, v => v ? fmt(v) + " m" : "Sin corte", v => pf.cortar = v ? pf.base + v : 0);
     const n = texto("p", "nota2"); n.textContent = "También puedes arrastrar con el ratón sobre el modelo."; p.append(n);
@@ -44,14 +44,17 @@
   }
   function panelAmbiente(p) {
     titulo(p, "Ambiente");
-    opciones(p, "Luz", Object.keys(AMB).map(k => [k, k]), Aj.amb, v => { Aj.amb = v; aplicaAj(); });
-    opciones(p, "Fondo", [["#000000", "Negro"], ["#101418", "Noche"], ["#20201e", "Grafito"]], Aj.fondo, v => { Aj.fondo = v; aplicaAj(); });
+    const GR = { Natural: "linear-gradient(160deg,#9cc3e6,#e9eef2 70%)", Amanecer: "linear-gradient(160deg,#7d8fb8,#f2b98c 75%)", Atardecer: "linear-gradient(160deg,#3d3a5c,#e8875a 70%)", Noche: "linear-gradient(160deg,#04060d,#1b2340 80%)", Blanco: "linear-gradient(160deg,#ffffff,#d9d9d6)" };
+    const NOM = { Natural: "Día", Amanecer: "Amanecer", Atardecer: "Atardecer", Noche: "Noche", Blanco: "Estudio" };
+    const m = texto("div", "muestras"); Object.keys(AMB).forEach(k => { const b = texto("button"); b.type = "button"; b.innerHTML = `<i style="background:${GR[k]}"></i>${NOM[k] || k}`; b.setAttribute("aria-pressed", String(k === Aj.amb)); b.onclick = () => { m.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", "false")); b.setAttribute("aria-pressed", "true"); Aj.amb = k; aplicaAj(); }; m.append(b); }); p.append(m);
+    interruptor(p, "Luces de la casa", U_R.uLuz.value > .5, v => ponLuces(v));
+    if (!R.activo) opciones(p, "Fondo", [["#000000", "Negro"], ["#101418", "Noche"], ["#20201e", "Grafito"]], Aj.fondo, v => { Aj.fondo = v; aplicaAj(); });
     deslizador(p, "pBri", "Brillo", .5, 1.8, .01, Aj.brillo, v => fmt(v), v => { Aj.brillo = v; aplicaAj(); });
   }
   function panelHerr(p) {
     titulo(p, "Herramientas");
-    const l = [["Cargar un escaneo", () => $("archivo").click()], ["Unir varios escaneos", () => $("bUnir").click()], ["Ver casa de prueba", () => $("muestra").click()], ["Mis proyectos", () => $("bCuenta").click()], ["Probar un modelo en esta portada", probarEnPortada], ["Ver todas las funciones", () => $("verH").click()]];
-    l.forEach(([n, f]) => { const b = texto("button", "linea"); b.type = "button"; b.textContent = n; b.onclick = () => { panelP.hidden = true; panelP.dataset.id = ""; f(); }; p.append(b); });
+    const l = [["Cargar un escaneo", "GLB, OBJ, FBX, ZIP y más", "subir", () => $("archivo").click()], ["Unir varios escaneos", "Colócalos sobre el plano", "unir", () => $("bUnir").click()], ["Recorrer la villa", "Entra y camina en primera persona", "puerta", () => $("muestra").click()], ["Mis proyectos", "Lo que has publicado", "carpeta", () => $("bCuenta").click()], ["Probar un modelo aquí", "Ponlo en esta portada", "ver", probarEnPortada], ["Todas las funciones", "Medir, amueblar, VR, estadísticas…", "rejilla", () => $("verH").click()]];
+    l.forEach(([n, d, i, f]) => { const b = texto("button", "linea"); b.type = "button"; b.innerHTML = ico(i) + "<div><span></span><small></small></div>"; b.querySelector("span").textContent = n; b.querySelector("small").textContent = d; b.onclick = () => { panelP.hidden = true; panelP.dataset.id = ""; f(); }; p.append(b); });
   }
   async function probarEnPortada() {
     const i = texto("input"); i.type = "file"; i.multiple = true; i.onchange = async () => {
@@ -66,7 +69,8 @@
   }
   function panelAjustes(p) {
     titulo(p, "Ajustes");
-    opciones(p, "Calidad", [[1, "Media"], [1.5, "Alta"], [2, "Máxima"]], Aj.calidad, v => { Aj.calidad = v; aplicaAj(); medir(); });
+    opciones(p, "Efectos de luz", NIVELES.map((n, i) => [i, n]), R.nivel, v => { ponNivel(v, true); if (ESC[escAct]) { const e = escAct; escAct = null; usarReal(e); } });
+    opciones(p, "Resolución", [[1, "Media"], [1.5, "Alta"], [2, "Máxima"]], Aj.calidad, v => { Aj.calidad = v; aplicaAj(); medir(); });
     interruptor(p, "Giro automático", Aj.giro, v => { Aj.giro = v; guardaAj(); });
     interruptor(p, "Mostrar textos de la portada", Aj.texto, v => { Aj.texto = v; aplicaAj(); });
     deslizador(p, "aVel", "Velocidad al caminar", .5, 2, .05, Aj.vel, v => "× " + fmt(v), v => { Aj.vel = v; guardaAj(); });
@@ -79,20 +83,21 @@
   }
   const BOTONES = { vista: panelVista, rec: panelRecorrido, amb: panelAmbiente, herr: panelHerr, ia: panelIA, aju: panelAjustes };
   document.querySelectorAll("#barraP [data-p]").forEach(b => b.addEventListener("click", () => abrePanel(b.dataset.p, BOTONES[b.dataset.p])));
-  $("bpCuenta").addEventListener("click", () => $("bCuenta").click());
+  $("bpCuenta").addEventListener("click", () => { if (!nube) { aviso("Las cuentas no están disponibles en esta copia de la web."); return; } cierraPanel(); cuenta2(); });
   function aplicaAj() {
     guardaAj(); FONDO_P.set(Aj.fondo); document.documentElement.style.setProperty("--negro", Aj.fondo); $("app").classList.toggle("sintexto", !Aj.texto);
     if (T.modo === "portada") { if (pf.propio && pf.caja) { vista.style.filter = ""; const L = solEn(pf.caja, Aj.amb); pasaEnv(escaparate, L.e); pf.cielo = L.cielo; } else { vista.style.filter = AMB[Aj.amb] || ""; pf.cielo = 0xffffff; } if (pf.listo) marcoPortada(); }
   }
 
   /* ---------- Chat con acciones: se le pide y lo hace ---------- */
-  const ESQ_AG = { type: "object", properties: { respuesta: { type: "string" }, acciones: { type: "array", items: { type: "object", properties: { tipo: { type: "string", enum: ["ir_a", "ambiente", "vista", "color_suelo", "color_paredes", "colocar", "seccion", "foto"] }, valor: { type: "string" }, estancia: { type: "string" } }, required: ["tipo", "valor"] } } }, required: ["respuesta", "acciones"] };
-  const ayudaAg = () => `Puedes actuar devolviendo acciones. ir_a: nombre exacto de una estancia. ambiente: ${Object.keys(AMB).join(", ")}. vista: maqueta, plano o caminar. color_suelo: ${Object.keys(TONOS.suelo).join(", ")}. color_paredes: ${Object.keys(TONOS.pared).join(", ")}. colocar: valor es ${Object.keys(CATALOGO).join(", ")}, y estancia es el nombre de la estancia. seccion (solo en la portada): 0 exterior, 1 sin techo, 2 interior, 4 plano, 5 piezas, 6 estancias. "De día" equivale a ambiente Natural. Nunca digas que has hecho algo que no esté en acciones. foto: guarda una imagen. Si no se pide actuar, deja acciones vacío.`;
+  const ESQ_AG = { type: "object", properties: { respuesta: { type: "string" }, acciones: { type: "array", items: { type: "object", properties: { tipo: { type: "string", enum: ["ir_a", "ambiente", "luces", "vista", "color_suelo", "color_paredes", "colocar", "seccion", "foto"] }, valor: { type: "string" }, estancia: { type: "string" } }, required: ["tipo", "valor"] } } }, required: ["respuesta", "acciones"] };
+  const ayudaAg = () => `Puedes actuar devolviendo acciones. luces: encender, apagar o alternar las lámparas de la casa. ir_a: nombre exacto de una estancia. ambiente: ${Object.keys(AMB).join(", ")}. vista: maqueta, plano o caminar. color_suelo: ${Object.keys(TONOS.suelo).join(", ")}. color_paredes: ${Object.keys(TONOS.pared).join(", ")}. colocar: valor es ${Object.keys(CATALOGO).join(", ")}, y estancia es el nombre de la estancia. seccion (solo en la portada): 0 exterior, 1 sin techo, 2 interior, 4 plano, 5 piezas, 6 estancias. "De día" equivale a ambiente Natural. Nunca digas que has hecho algo que no esté en acciones. foto: guarda una imagen. Si no se pide actuar, deja acciones vacío.`;
   function ejecuta2(lista) {
     const hechas = [];
     (lista || []).forEach(a => {
       const v = String(a.valor || "");
-      if (a.tipo === "ambiente" && AMB[v] !== undefined) { if (T.modo === "portada") { Aj.amb = v; aplicaAj(); } else { D.amb = v === "Natural" ? "" : v; guardaD(); aplicaAmb(); } hechas.push("Ambiente " + v); }
+      if (a.tipo === "luces") { const on = ponLuces(/apag|off|no/i.test(v) ? false : /alter|cambi/i.test(v) ? "alternar" : true); hechas.push(on ? "Luces encendidas" : "Luces apagadas"); }
+      else if (a.tipo === "ambiente" && AMB[v] !== undefined) { if (T.modo === "portada") { Aj.amb = v; aplicaAj(); } else { D.amb = v === "Natural" ? "" : v; guardaD(); aplicaAmb(); } hechas.push("Ambiente " + v); }
       else if (T.modo === "portada") { if (a.tipo === "seccion" && isFinite(+v)) { irSeccion(+v); hechas.push("Vista cambiada"); } else if (a.tipo === "vista" && { plano: 4, maqueta: 1 }[v] !== undefined) { irSeccion({ plano: 4, maqueta: 1 }[v]); hechas.push(v === "plano" ? "Plano" : "Maqueta"); } else if (a.tipo === "foto") { pf.foto = true; hechas.push("Foto guardada"); } }
       else if (a.tipo === "ir_a") { const s = salas.find(q => q.nombre.toLowerCase() === v.toLowerCase()); if (s) { saltar(s); hechas.push("En " + s.nombre); } }
       else if (a.tipo === "vista") { if (v === "maqueta" && T.modo === "andar") { maqueta(); hechas.push("Maqueta"); } else if (v === "caminar" && T.modo === "orbita") { entrar(); hechas.push("Caminando"); } else if (v === "plano") { plano(true); hechas.push("Plano"); } }
@@ -108,7 +113,10 @@
     const q = " " + t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "") + " ", ac = [];
     const amb = [[/\bnoche\b|\boscur/, "Noche"], [/atardecer|puesta de sol/, "Atardecer"], [/amanecer/, "Amanecer"], [/\bde dia\b|\bdia\b|natural|\bluz normal/, "Natural"], [/blanco y negro|\bblanco\b/, "Blanco"]].find(x => x[0].test(q));
     const pideAmb = /ambiente|\bpon\b|\bponlo\b|\bponla\b|\bhaz\b|\bcambia\b|\bque sea\b|\bmodo\b/.test(q) || q.trim().split(" ").length <= 2;
-    if (amb && pideAmb && !/suelo|pared/.test(q)) ac.push({ tipo: "ambiente", valor: amb[1] });
+    const luz = /\bluz\b|\bluces\b|lampara|lamparas|focos/.test(q);
+    if (luz && /apaga|quita|sin luz|oscuras/.test(q)) ac.push({ tipo: "luces", valor: "apagar" });
+    else if (luz && /encien|enciend|prende|pon|activa|da la/.test(q)) ac.push({ tipo: "luces", valor: "encender" });
+    if (amb && pideAmb && !/suelo|pared/.test(q) && !(luz && !/noche|dia|atardecer|amanecer/.test(q.replace(/luz|luces/g, "")))) ac.push({ tipo: "ambiente", valor: amb[1] });
     if (/\bplano\b/.test(q) && !/\bque\b.*\bplano\b/.test(q)) ac.push({ tipo: "vista", valor: "plano" });
     if (/maqueta|sin techo|quita el techo/.test(q)) ac.push({ tipo: "vista", valor: "maqueta" });
     if (T.modo === "portada") { if (/exterior|por fuera|fachada/.test(q)) ac.push({ tipo: "seccion", valor: "0" }); if (/interior|por dentro|entra\b/.test(q)) ac.push({ tipo: "seccion", valor: "2" }); }
@@ -130,7 +138,7 @@
     const fi = texto("div", "fila"), e = texto("button", "tool"), mic = texto("button", "tool"); e.type = mic.type = "button"; e.id = "enviarIA"; e.textContent = "Enviar"; mic.textContent = "Hablar"; fi.append(e);
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (SR) { fi.append(mic); mic.onclick = () => { const r = new SR(); r.lang = "es-ES"; mic.textContent = "Escuchando…"; r.onresult = v => { t.value = v.results[0][0].transcript; envia(); }; r.onend = () => mic.textContent = "Hablar"; r.onerror = () => { mic.textContent = "Hablar"; aviso("No se ha podido usar el micrófono."); }; r.start(); }; }
     p.append(c, d, fi);
-    const pinta = () => { c.textContent = ""; charla.forEach(m => { const q = texto("p"); q.textContent = (m.role === "user" ? "Tú: " : "") + m.visible; c.append(q); }); c.scrollTop = 1e6; };
+    const pinta = () => { c.textContent = ""; charla.forEach(m => { const q = texto("p", m.role === "user" ? "yo" : ""); q.textContent = m.visible; c.append(q); }); c.scrollTop = 1e6; };
     const envia = async () => {
       if (e.disabled) return; const v = t.value.trim(); if (!v) return; t.value = ""; e.disabled = true; charla.push({ role: "user", visible: v }); pinta();
       const local = ordenLocal(v);
@@ -146,7 +154,7 @@
     e.onclick = envia; t.onkeydown = k => { k.stopPropagation(); if (k.key === "Enter" && !k.shiftKey) { k.preventDefault(); envia(); } };
     pinta(); t.focus();
   }
-  function vistaPortada() { corte.constant = T.clip; renderer.render(scene, camera); const c = document.createElement("canvas"), k = 640 / vista.width; c.width = 640; c.height = Math.round(vista.height * k); c.getContext("2d").drawImage(vista, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", .78); }
+  function vistaPortada() { corte.constant = T.clip; pintar(); const c = document.createElement("canvas"), k = 640 / vista.width; c.width = 640; c.height = Math.round(vista.height * k); c.getContext("2d").drawImage(vista, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", .78); }
 
   /* ---------- Más herramientas de IA ---------- */
   async function redecorarIA(estilo) {
