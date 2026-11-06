@@ -138,4 +138,4 @@ El motor 3D, los lectores de formatos y las fuentes se cargan desde jsDelivr y G
 
 ## Créditos
 
-- Busto de la portada: *Marble Bust 01* de [Poly Haven](https://polyhaven.com/a/marble_bust_01) (CC0). Simplificado a 9 600 triángulos, geometría con meshopt y texturas de 256–1024 px (`modelos/busto.glb`, 242 KB).
+- Busto de la portada: *Marble Bust 01* de [Poly Haven](https://polyhaven.com/a/marble_bust_01) (CC0). Malla completa (17 500 triángulos) con meshopt y texturas de 512–1024 px (`modelos/busto.glb`, 436 KB).
