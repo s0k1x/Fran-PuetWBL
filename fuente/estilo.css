@@ -677,3 +677,4 @@ html.claro .cifras span, html.claro #etiPlanta { color: #8b8a84; }
 @media (max-width: 760px) { #portada { background: linear-gradient(rgba(6, 6, 6, .35), rgba(6, 6, 6, .55)); } }
 #portada > section.revelable > * { opacity: 0; transform: translateY(18px); transition: opacity .5s var(--curva), transform .5s var(--curva); }
 #portada > section.revelable.visto > * { opacity: 1; transform: none; }
+#acceso .perfil .avatar { color: #17140f; font-size: 18px; font-weight: 600; }

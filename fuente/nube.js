@@ -38,7 +38,7 @@
           <button type="button" data-a="acc">${ico("ojo")}Accesibilidad</button>
           <button type="button" data-a="sal">${ico("salir")}Cerrar sesión</button>
         </div><div class="accP" hidden style="margin-top:12px"></div></div>`;
-      A.querySelector(".perfil b").textContent = nom; A.querySelector(".perfil span span").textContent = usuario.email;
+      A.querySelector(".perfil b").textContent = nom; A.querySelector(".perfil div span").textContent = usuario.email || "";
       A.querySelector(".x").onclick = cerrar;
       const ir = (k, f) => A.querySelector(`[data-a="${k}"]`).onclick = f;
       ir("pro", () => { cerrar(); misProyectos(); });
