@@ -3,7 +3,7 @@
   /* Cada estancia es una caja; dentro puede haber varias fotos 360 (vistas) tomadas desde puntos distintos.
      La foto activa se proyecta desde su punto de captura: dentro se ve igual que la foto y desde fuera
      las cajas forman la maqueta de la casa (casa de muñecas, sin techo). La IA agrupa las fotos por estancia */
-  const TR = { salas: [], i: 0, modo: "dentro", escena: null, cam: new THREE.PerspectiveCamera(75, 1, .05, 400), yaw: 0, pitch: 0, fov: 75, orb: { az: .75, el: .95, d: 18, c: new THREE.Vector3() }, sucio: true, activo: false };
+  const TR = { salas: [], i: 0, modo: "dentro", escena: null, cam: new THREE.PerspectiveCamera(75, 1, .05, 400), yaw: 0, pitch: 0, fov: 75, orb: { az: .75, el: .95, d: 18, c: new THREE.Vector3() }, sucio: true, activo: false, pos: new THREE.Vector3(), teclas: {}, dest: null, trans: null, ult: 0 };
   ICO.pausa = '<path d="M8 5v14M16 5v14"/>';
   const OJO = 1.55, ES_VIDEO = /\.(mp4|webm|mov|m4v)$/i, ES_IMG = /\.(jpe?g|png|webp|avif)$/i;
   const TIPOS = { "Salón": [5, 4.2], "Comedor": [4, 3.5], "Cocina": [3.6, 3], "Dormitorio": [3.6, 3.2], "Baño": [2.6, 2], "Pasillo": [1.4, 4], "Recibidor": [2.4, 2.4], "Despacho": [3, 3], "Terraza": [4, 3], "Estancia": [4, 3.5] };
@@ -15,9 +15,10 @@
   /* Material: muestrea la foto en la dirección desde el punto de captura */
   const matPano = () => new THREE.ShaderMaterial({
     side: THREE.BackSide, toneMapped: false,
-    uniforms: { map: { value: null }, centro: { value: new THREE.Vector3() }, giro: { value: 0 }, brillo: { value: 1 } },
+    uniforms: { map: { value: null }, centro: { value: new THREE.Vector3() }, giro: { value: 0 }, map2: { value: null }, centro2: { value: new THREE.Vector3() }, giro2: { value: 0 }, mezcla: { value: 0 }, brillo: { value: 1 } },
     vertexShader: "varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }",
-    fragmentShader: "uniform sampler2D map; uniform vec3 centro; uniform float giro, brillo; varying vec3 vW; void main(){ vec3 d = normalize(vW - centro); float u = fract(atan(d.x, -d.z) / 6.2831853 + .5 + giro); float v = 1. - acos(clamp(d.y, -1., 1.)) / 3.1415927; gl_FragColor = vec4(texture2D(map, vec2(u, v)).rgb * brillo, 1.); }"
+    /* Dos fotos a la vez solo durante el fundido al pasar de una vista a otra andando */
+    fragmentShader: "uniform sampler2D map, map2; uniform vec3 centro, centro2; uniform float giro, giro2, mezcla, brillo; varying vec3 vW; vec3 mu(sampler2D t, vec3 c, float g){ vec3 d = normalize(vW - c); float u = fract(atan(d.x, -d.z) / 6.2831853 + .5 + g); float v = 1. - acos(clamp(d.y, -1., 1.)) / 3.1415927; return texture2D(t, vec2(u, v)).rgb; } void main(){ vec3 a = mu(map, centro, giro); if (mezcla > .001) a = mix(a, mu(map2, centro2, giro2), mezcla); gl_FragColor = vec4(a * brillo, 1.); }"
   });
   function texDe(fuente, ancho) {
     const w = Math.min(ancho, fuente.width || fuente.videoWidth), c = document.createElement("canvas"); c.width = w; c.height = Math.round(w / 2);
@@ -86,11 +87,11 @@
   /* Cada estancia muestra la vista activa (si estás en ella) o la primera */
   function actualizaMats() {
     const a = actual();
-    TR.salas.forEach(s => { const p = s.puntos.includes(a) ? a : s.puntos[0], u = s.mat.uniforms; u.map.value = texDePunto(p); u.centro.value.copy(centroDe(s, p)); u.giro.value = p.giro / 360; });
+    TR.salas.forEach(s => { if (!s.mat) return; const p = s.puntos.includes(a) ? a : s.puntos[0], u = s.mat.uniforms; u.map.value = texDePunto(p); u.centro.value.copy(centroDe(s, p)); u.giro.value = p.giro / 360; });
     TR.sucio = true; barraTour();
   }
   /* Alta resolución solo para la vista en la que estás: memoria contenida aunque haya decenas de fotos */
-  function activa(i, suave = true) {
+  function activa(i, suave = true, andando = false) {
     const cambia = () => {
       const l = puntos(); TR.i = Math.max(0, Math.min(l.length - 1, i)); const p = l[TR.i];
       l.forEach(q => { if (q !== p && q.hi) { q.hi.dispose(); q.hi = null; } if (q !== p && q.video) q.video.pause(); });
@@ -101,7 +102,7 @@
           p.cargandoHi = false; if (bm.width > p.lo.image.width && actual() === p && TR.activo) { p.hi = texDe(bm, maxTex()); actualizaMats(); } if (bm.close) bm.close();
         }).catch(() => { p.cargandoHi = false; });
       }
-      TR.yaw = 0; TR.pitch = 0; actualizaMats();
+      if (!andando) { TR.yaw = 0; TR.pitch = 0; TR.pos.copy(centroDe(salaDe(p), p)); TR.dest = null; } actualizaMats();
     };
     if (!suave || calmo) return cambia();
     const v = $("tVelo"); v.style.opacity = 1; setTimeout(() => { cambia(); requestAnimationFrame(() => { v.style.opacity = 0; }); }, 180);
@@ -114,12 +115,13 @@
   /* ---------- Bucle propio: solo pinta cuando algo cambia (o hay vídeo) ---------- */
   function tickTour() {
     const p = actual(); if (!p) return;
-    const vid = TR.modo === "dentro" && p.video && !p.video.paused;
+    const vid = TR.modo === "dentro" && p.video && !p.video.paused, now = performance.now(), dt = Math.min(.05, (now - (TR.ult || now)) / 1000); TR.ult = now;
+    if (TR.modo === "dentro") anda(dt);
     if (!TR.sucio && !vid && !TR.inercia) return; TR.sucio = false;
     if (TR.inercia) { TR.yaw += TR.vy; TR.pitch = Math.max(-1.45, Math.min(1.45, TR.pitch + TR.vp)); TR.vy *= .9; TR.vp *= .9; if (Math.abs(TR.vy) + Math.abs(TR.vp) < 1e-4) TR.inercia = false; }
     const lz = renderer.domElement, cm = TR.cam; cm.aspect = lz.clientWidth / Math.max(1, lz.clientHeight);
-    TR.salas.forEach(s => { s.mat.uniforms.brillo.value = TR.modo === "dentro" ? 1 : .92; });
-    if (TR.modo === "dentro") { cm.fov = TR.fov; cm.position.copy(centroDe(salaDe(p), p)); cm.rotation.set(TR.pitch, TR.yaw, 0, "YXZ"); }
+    TR.salas.forEach(s => { if (s.mat) s.mat.uniforms.brillo.value = TR.modo === "dentro" ? 1 : .92; });
+    if (TR.modo === "dentro") { cm.fov = TR.fov; cm.position.set(TR.pos.x, centroDe(salaDe(p), p).y, TR.pos.z); cm.rotation.set(TR.pitch, TR.yaw, 0, "YXZ"); }
     else { const o = TR.orb; cm.fov = 40; cm.position.set(o.c.x + Math.sin(o.az) * Math.cos(o.el) * o.d, Math.sin(o.el) * o.d, o.c.z + Math.cos(o.az) * Math.cos(o.el) * o.d); cm.lookAt(o.c); }
     cm.updateProjectionMatrix();
     const tm = renderer.toneMapping; renderer.setRenderTarget(null); renderer.toneMapping = THREE.NoToneMapping; renderer.render(TR.escena, cm); renderer.toneMapping = tm;
@@ -127,8 +129,8 @@
   }
   /* Marcadores: dentro, las otras vistas de la estancia (en el suelo) y las estancias vecinas; en maqueta, los nombres */
   function marcadores() {
-    if (TR.modo !== "dentro") return TR.salas.map(s => ({ t: s.nombre + (s.puntos.length > 1 ? ` · ${s.puntos.length} vistas` : ""), ir: () => entra(puntos().indexOf(s.puntos[0])), pos: new THREE.Vector3(s.x, s.alto + .2, s.z), cls: "" }));
-    const p = actual(), s = salaDe(p), c = centroDe(s, p), r = [];
+    if (TR.modo !== "dentro") return TR.salas.filter(s => s.malla).map(s => ({ t: s.nombre + (s.puntos.length > 1 ? ` · ${s.puntos.length} vistas` : ""), ir: () => entra(puntos().indexOf(s.puntos[0])), pos: new THREE.Vector3(s.x, s.alto + .2, s.z), cls: "" }));
+    const p = actual(), s = salaDe(p), c = new THREE.Vector3(TR.pos.x, OJO, TR.pos.z), r = [];
     s.puntos.forEach((q, k) => { if (q !== p) r.push({ t: "Vista " + (k + 1), ir: () => entra(puntos().indexOf(q)), pos: new THREE.Vector3(s.x + q.ox, .05, s.z + q.oz), cls: "suelo" }); });
     salasVecinas(s).forEach(q => { const dx = q.x - c.x, dz = q.z - c.z, l = Math.hypot(dx, dz) || 1, rr = Math.min(s.ancho, s.largo) * .42; r.push({ t: q.nombre, ir: () => entra(puntos().indexOf(q.puntos[0])), pos: new THREE.Vector3(c.x + dx / l * rr, OJO - .35, c.z + dz / l * rr), cls: "" }); });
     return r;
@@ -138,6 +140,30 @@
     const k = TR.modo + TR.i + M.map(m => m.t).join("|");
     if (caja.dataset.k !== k) { caja.dataset.k = k; caja.textContent = ""; M.forEach((m, j) => { const b = texto("button", "tPin " + m.cls); b.type = "button"; b.dataset.j = j; b.innerHTML = (TR.modo === "dentro" ? ico(m.cls ? "pin" : "flecha") : "") + "<span></span>"; b.querySelector("span").textContent = m.t; b.onclick = m.ir; caja.append(b); }); }
     [...caja.children].forEach(b => { const m = M[+b.dataset.j]; if (!m) return; v.copy(m.pos).project(TR.cam); const ver = v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1; b.hidden = !ver; if (ver) b.style.transform = `translate(${((v.x + 1) / 2 * W).toFixed(1)}px,${((1 - v.y) / 2 * Hh).toFixed(1)}px) translate(-50%,-50%)`; });
+  }
+  /* ---------- Andar: WASD o flechas, o clic en el suelo. Cerca de otra vista, la foto cambia con un fundido ---------- */
+  const enSala = (x, z, m = .22) => TR.salas.find(s => s.mat && Math.abs(x - s.x) <= s.ancho / 2 - m && Math.abs(z - s.z) <= s.largo / 2 - m);
+  const MOV = { KeyW: [0, 1], ArrowUp: [0, 1], KeyS: [0, -1], ArrowDown: [0, -1], KeyA: [-1, 0], KeyD: [1, 0] };
+  function anda(dt) {
+    const k = TR.teclas, gira = (k.ArrowRight ? 1 : 0) - (k.ArrowLeft ? 1 : 0); if (gira) { TR.yaw -= gira * 1.7 * dt; TR.sucio = true; }
+    let f = 0, l = 0; for (const c in MOV) if (k[c]) { l += MOV[c][0]; f += MOV[c][1]; }
+    let vx = 0, vz = 0; const v = (k.ShiftLeft || k.ShiftRight ? 2.6 : 1.4) * dt;
+    if (f || l) { TR.dest = null; const n = Math.hypot(f, l); f /= n; l /= n; vx = (-Math.sin(TR.yaw) * f + Math.cos(TR.yaw) * l) * v; vz = (-Math.cos(TR.yaw) * f - Math.sin(TR.yaw) * l) * v; }
+    else if (TR.dest) { const dx = TR.dest.x - TR.pos.x, dz = TR.dest.z - TR.pos.z, d = Math.hypot(dx, dz); if (d < .04) TR.dest = null; else { const a = Math.min(d, v * 1.3) / d; vx = dx * a; vz = dz * a; } }
+    if (vx || vz) {
+      /* Se camina dentro de las estancias; al chocar se desliza a lo largo de la pared */
+      if (enSala(TR.pos.x + vx, TR.pos.z + vz)) { TR.pos.x += vx; TR.pos.z += vz; } else if (Math.abs(vx) > Math.abs(vz) * .35 && enSala(TR.pos.x + vx, TR.pos.z)) TR.pos.x += vx; else if (Math.abs(vz) > Math.abs(vx) * .35 && enSala(TR.pos.x, TR.pos.z + vz)) TR.pos.z += vz;
+      else { /* Pared con otra estancia detrás: se cruza a ella (cada pared compartida hace de puerta) */ const n = Math.hypot(vx, vz), x = TR.pos.x + vx / n * .75, z = TR.pos.z + vz / n * .75; if (enSala(x, z)) { TR.pos.x = x; TR.pos.z = z; if (TR.dest && Math.hypot(TR.dest.x - x, TR.dest.z - z) < .4) TR.dest = null; } else TR.dest = null; }
+      TR.sucio = true; eligeVista();
+    }
+    if (TR.trans) { const t = TR.trans, u = t.s.mat.uniforms; t.t = Math.min(1, t.t + dt / .35); u.mezcla.value = t.t * t.t * (3 - 2 * t.t); TR.sucio = true; if (t.t >= 1) { TR.trans = null; activa(puntos().indexOf(t.p), false, true); u.mezcla.value = 0; } }
+  }
+  /* La mejor foto es la tomada más cerca de donde estás (con margen para no parpadear entre dos) */
+  function eligeVista() {
+    if (TR.trans) return; const s = enSala(TR.pos.x, TR.pos.z, 0) || salaDe(actual()), a = actual(), d = q => Math.hypot(s.x + q.ox - TR.pos.x, s.z + q.oz - TR.pos.z);
+    const mejor = s.puntos.reduce((m, q) => d(q) < d(m) ? q : m, s.puntos[0]);
+    if (mejor === a || (s.puntos.includes(a) && d(mejor) + .3 > d(a))) return;
+    const u = s.mat.uniforms; u.map2.value = texDePunto(mejor); u.centro2.value.copy(centroDe(s, mejor)); u.giro2.value = mejor.giro / 360; u.mezcla.value = 0; TR.trans = { s, p: mejor, t: 0 };
   }
   function entra(j) { if (j < 0) return; if (TR.modo !== "dentro") { TR.modo = "dentro"; activa(j, true); } else if (j !== TR.i) activa(j, true); }
   function barraTour() {
@@ -152,7 +178,7 @@
   $("app").insertAdjacentHTML("beforeend", `<div id="tour" hidden>
     <div class="tArr"><button id="tSalir" class="tool" type="button" aria-label="Salir de la visita">${ico("x")}</button><div class="tTit"><b id="tNom"></b><small id="tCnt"></small></div></div>
     <div id="tHot"></div><div id="tVelo"></div>
-    <div class="tDock"><button id="tAnt" class="tool" type="button" aria-label="Vista anterior">${ico("flecha")}</button>
+    <div class="tDock"><button id="tAnt" class="tool" type="button" aria-label="Vista anterior (RePág)">${ico("flecha")}</button>
       <button id="tMaq" class="tool" type="button" aria-pressed="false">${ico("maqueta")}<span>Maqueta</span></button>
       <button id="tVid" class="tool" type="button" hidden></button>
       <button id="tOrg" class="tool" type="button">${ico("rejilla")}<span>Organizar</span></button>
@@ -179,8 +205,11 @@
   addEventListener("keydown", e => {
     if (!TR.activo || /^(text|number|search|range)$/.test(e.target.type) || e.target.tagName === "SELECT") return;
     if (e.key === "Escape") { if (!$("ficha").hidden) cierraOrg(); else saleTour(); }
-    else if (e.key === "ArrowRight") $("tSig").click(); else if (e.key === "ArrowLeft") $("tAnt").click(); else if (e.key.toLowerCase() === "m") $("tMaq").click();
+    else if (e.key === "PageDown") $("tSig").click(); else if (e.key === "PageUp") $("tAnt").click(); else if (e.key.toLowerCase() === "m") $("tMaq").click();
+    else if (TR.modo === "dentro" && (MOV[e.code] || /^(ArrowLeft|ArrowRight|ShiftLeft|ShiftRight)$/.test(e.code))) { TR.teclas[e.code] = true; if (/^Arrow/.test(e.code)) e.preventDefault(); }
   });
+  addEventListener("keyup", e => { delete TR.teclas[e.code]; });
+  addEventListener("blur", () => { TR.teclas = {}; });
   /* Mirar (dentro) u orbitar (maqueta) arrastrando; rueda o pellizco para acercar */
   const dedos = new Map(); let arr = null, pel = 0;
   tour.addEventListener("pointerdown", e => { if (e.target.closest("button, input, .tDock, .tArr")) return; dedos.set(e.pointerId, [e.clientX, e.clientY]); arr = { t: performance.now(), mov: 0 }; TR.inercia = false; tour.setPointerCapture(e.pointerId); });
@@ -194,7 +223,12 @@
   });
   const suelta = e => {
     dedos.delete(e.pointerId); if (dedos.size < 2) pel = 0; if (!arr || dedos.size) return;
-    if (arr.mov < 6 && TR.modo === "maqueta") { const q = renderer.domElement.getBoundingClientRect(), r = new THREE.Raycaster(); r.setFromCamera({ x: (e.clientX - q.left) / q.width * 2 - 1, y: -(e.clientY - q.top) / q.height * 2 + 1 }, TR.cam); const h = r.intersectObjects(TR.salas.map(s => s.malla))[0]; if (h) entra(puntos().indexOf(h.object.userData.sala.puntos[0])); }
+    if (arr.mov < 6 && TR.modo === "maqueta") { const q = renderer.domElement.getBoundingClientRect(), r = new THREE.Raycaster(); r.setFromCamera({ x: (e.clientX - q.left) / q.width * 2 - 1, y: -(e.clientY - q.top) / q.height * 2 + 1 }, TR.cam); const h = r.intersectObjects(TR.salas.filter(s => s.malla).map(s => s.malla))[0]; if (h) entra(puntos().indexOf(h.object.userData.sala.puntos[0])); }
+    else if (arr.mov < 6 && TR.modo === "dentro") {
+      const q = renderer.domElement.getBoundingClientRect(), r = new THREE.Raycaster(); r.setFromCamera({ x: (e.clientX - q.left) / q.width * 2 - 1, y: -(e.clientY - q.top) / q.height * 2 + 1 }, TR.cam);
+      const h = r.intersectObjects(TR.salas.filter(s => s.malla).map(s => s.malla))[0];
+      if (h) { const p = h.point; if (p.y > .08) { const dx = TR.pos.x - p.x, dz = TR.pos.z - p.z, l = Math.hypot(dx, dz) || 1; p.x += dx / l * .5; p.z += dz / l * .5; } TR.dest = { x: p.x, z: p.z }; TR.sucio = true; }
+    }
     else if (TR.modo === "dentro" && !calmo && performance.now() - arr.t < 600) TR.inercia = true;
     arr = null;
   };
@@ -302,10 +336,11 @@
     if (!$("ficha").hidden && $("ficha").classList.contains("tEd")) organizador();
   }
   function entraTour() {
-    if (TR.activo) return; TR.activo = true; T.modo = "tour"; cierraPanel(); $("galeria").hidden = true;
+    if (TR.activo) return; TR.activo = true; T.modo = "tour"; if (window.__p) window.__p.TR = TR; cierraPanel(); $("galeria").hidden = true;
     interfaz("andar"); ["dock", "esq", "mini", "etiPlanta", "palanca", "pista"].forEach(id => { const e = $(id); if (e) e.hidden = true; });
     renderer.domElement.style.visibility = ""; renderer.domElement.style.opacity = 1; tour.hidden = false; TR.modo = "dentro";
-    ponResolucion(); renderer.setAnimationLoop(tickTour); TR.sucio = true;
+    ponResolucion(); renderer.setAnimationLoop(tickTour); TR.sucio = true; TR.ult = 0; TR.teclas = {};
+    setTimeout(() => aviso(tactil ? "Arrastra para mirar · toca el suelo para andar." : "Arrastra para mirar · WASD, flechas o clic en el suelo para andar."), 2600);
   }
   function saleTour() {
     if (!TR.activo) return; TR.activo = false; tour.hidden = true; cierraOrg();

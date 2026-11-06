@@ -22,7 +22,7 @@ let out = f("web.html")
   .replace("/*__UNION__*/", () => f("union.js"))
   .replace("/*__LUZ__*/", () => "const LUZ = " + f("luz.json") + ";");
 /* Minificado: menos bytes que descargar y menos que analizar (si terser está disponible) */
-try {
+if (!process.env.SIN_MIN) try {
   const { execFileSync } = require("child_process"), os = require("os"), tmp = path.join(os.tmpdir(), "innra-min");
   fs.mkdirSync(tmp, { recursive: true });
   out = out.replace(/<script>([\s\S]*?)<\/script>/g, (m, js) => {
