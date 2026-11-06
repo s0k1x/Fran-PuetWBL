@@ -43,7 +43,9 @@
     document.addEventListener("pointerleave", () => { vis = false; document.documentElement.classList.remove("con-cursor"); });
     const ACT = "button, a, label[for], [role='button'], [role='switch'], input[type='range'], .seg button, summary";
     document.addEventListener("pointerover", e => { const s = e.target.closest && e.target.closest(ACT); ani.classList.toggle("sobre", !!s); pun.classList.toggle("sobre", !!s); });
-    (function mueve() { ax += (mx - ax) * .2; ay += (my - ay) * .2; const oculto = document.pointerLockElement; pun.style.transform = `translate(${mx}px,${my}px)`; ani.style.transform = `translate(${ax}px,${ay}px)`; pun.style.opacity = ani.style.opacity = oculto ? 0 : ""; requestAnimationFrame(mueve); })();
+    /* El cursor solo se anima mientras se mueve: en reposo no consume nada */
+    let vivo = false; const mueve = () => { ax += (mx - ax) * .2; ay += (my - ay) * .2; const oculto = document.pointerLockElement; pun.style.transform = `translate(${mx}px,${my}px)`; ani.style.transform = `translate(${ax}px,${ay}px)`; pun.style.opacity = ani.style.opacity = oculto ? 0 : ""; if (Math.abs(mx - ax) + Math.abs(my - ay) > .3) requestAnimationFrame(mueve); else vivo = false; };
+    addEventListener("pointermove", () => { if (!vivo) { vivo = true; requestAnimationFrame(mueve); } }, { passive: true });
     const IMAN = "#muestra, #cargar, .azul, .btn-luz, .fantasma, #acceso .principal";
     document.addEventListener("pointermove", e => { const b = e.target.closest && e.target.closest(IMAN); document.querySelectorAll(".iman").forEach(x => { if (x !== b) { x.classList.remove("iman"); x.style.translate = ""; } }); if (!b) return; const q = b.getBoundingClientRect(), dx = e.clientX - (q.left + q.width / 2), dy = e.clientY - (q.top + q.height / 2); b.classList.add("iman"); b.style.translate = `${(dx * .18).toFixed(1)}px ${(dy * .28).toFixed(1)}px`; }, { passive: true });
   }

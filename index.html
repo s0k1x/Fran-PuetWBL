@@ -1736,17 +1736,22 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     if (op.tN) un.tN.value = op.tN;
     const def = []; if (un.tC.value) def.push("B_COL"); if (un.tN.value) def.push("B_NOR"); if (un.tR.value) def.push("B_RUG"); if (op.agua) def.push("B_AGUA"); if (d.caus) def.push("B_CAUS"); if (op.vidrio) def.push("B_VIDRIO"); if (d.luz) def.push("B_LUZ");
     if (!op.sinMascara) def.push("B_MASK");
+    const defBase = def;
     m.userData.real = d; m.userData.un = un;
-    m.customProgramCacheKey = () => "real:" + def.join(",");
+    m.customProgramCacheKey = () => "real:" + def.join(",") + (R.nivel === 0 ? ":ligero" : "");
     m.onBeforeCompile = sh => {
+      const def = R.nivel === 0 ? defBase.filter(x => !(x === "B_RUG" || (x === "B_NOR" && !op.agua))) : defBase.concat("B_MACRO");
       Object.assign(sh.uniforms, un, U_R);
       sh.vertexShader = "varying vec3 vMundo; varying vec3 vNorM;\n" + sh.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvMundo = (modelMatrix * vec4(transformed, 1.0)).xyz; vNorM = normalize(mat3(modelMatrix) * objectNormal);");
       let f = def.map(x => "#define " + x).join("\n") + "\n" + sh.fragmentShader.replace("void main() {", GLSL_CAJA + "\nvoid main() {\n cajaUV();");
       f = f.replace("#include <map_fragment>", `#include <map_fragment>
         #ifdef B_COL
           vec3 bc = texture2D(tC, bUV).rgb;
-          float bMac = dot(texture2D(tC, bUV * .11 + .37).rgb, vec3(.3333)) / max(.05, dot(uMedia, vec3(.3333)));
-          diffuseColor.rgb *= bc * mix(1., clamp(bMac, .6, 1.4), .22);
+          #ifdef B_MACRO
+            float bMac = dot(texture2D(tC, bUV * .11 + .37).rgb, vec3(.3333)) / max(.05, dot(uMedia, vec3(.3333)));
+            bc *= mix(1., clamp(bMac, .6, 1.4), .22);
+          #endif
+          diffuseColor.rgb *= bc;
         #endif`);
       f = f.replace("#include <roughnessmap_fragment>", `float roughnessFactor = roughness;
         #ifdef B_RUG
@@ -1836,7 +1841,21 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     const s = new THREE.Sky(); s.scale.setScalar(900); s.frustumCulled = false; s.renderOrder = -10; s.userData.noCollide = true;
     s.material.uniforms.uGan = { value: 1 };
     s.material.fragmentShader = s.material.fragmentShader.replace("gl_FragColor = vec4( retColor, 1.0 );", "gl_FragColor = vec4( retColor * uGan, 1.0 );").replace("void main() {", "uniform float uGan;\nvoid main() {");
-    s.material.depthWrite = false; s.visible = false; scene.add(s); R.cielo = s;
+    /* El cielo físico es caro por píxel: se hornea en un cubo una vez por cambio de ambiente y se pinta desde ahí */
+    R.cieloSky = s; R.escenaCielo = new THREE.Scene(); R.escenaCielo.add(s);
+    const tipo = renderer.capabilities.isWebGL2 && renderer.extensions.has("EXT_color_buffer_half_float") ? THREE.HalfFloatType : THREE.UnsignedByteType;
+    R.cuboRT = new THREE.WebGLCubeRenderTarget(320, { type: tipo, generateMipmaps: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+    R.cuboCam = new THREE.CubeCamera(1, 1000, R.cuboRT);
+    const m = new THREE.ShaderMaterial({ uniforms: { tCubo: { value: R.cuboRT.texture } }, side: THREE.BackSide, depthWrite: false, fog: false,
+      vertexShader: "varying vec3 vDir; void main(){ vec4 w = modelMatrix * vec4(position, 1.); vDir = w.xyz - cameraPosition; gl_Position = projectionMatrix * viewMatrix * w; gl_Position.z = gl_Position.w; }",
+      fragmentShader: "uniform samplerCube tCubo; varying vec3 vDir; void main(){ gl_FragColor = vec4(textureCube(tCubo, normalize(vDir)).rgb, 1.);\n#include <tonemapping_fragment>\n#include <encodings_fragment>\n}" });
+    const c = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), m); c.scale.setScalar(900); c.frustumCulled = false; c.renderOrder = -10; c.userData.noCollide = true; c.visible = false;
+    scene.add(c); R.cielo = c; R.cieloSucio = true;
+  }
+  function horneaCielo() {
+    if (!R.cieloSucio || !R.cuboCam) return; R.cieloSucio = false;
+    const tm = renderer.toneMapping, rt0 = renderer.getRenderTarget(); renderer.toneMapping = THREE.NoToneMapping;
+    R.cuboCam.update(renderer, R.escenaCielo); renderer.toneMapping = tm; renderer.setRenderTarget(rt0);
   }
   function entornoHDR(nombre) {
     if (R.cieloEnv[nombre]) return R.cieloEnv[nombre];
@@ -1857,7 +1876,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     R.sucio = true;
     const C = CIELOS[n] || CIELOS.Natural; R.ambiente = n; R.exp = C.exp; R.solDir = solDir.clone().normalize(); U_R.uNoche.value = C.noche; U_R.uCaus.value = C.noche > .7 ? .15 : .6 * (1 - C.noche * .5);
     if (!R.activo) return;
-    if (R.cielo) { const u = R.cielo.material.uniforms; u.turbidity.value = C.turb; u.rayleigh.value = C.ray; u.mieCoefficient.value = C.mie; u.mieDirectionalG.value = C.g; u.sunPosition.value.copy(solDir).multiplyScalar(400); u.uGan.value = C.gan; }
+    if (R.cieloSky) { R.cieloSucio = true; const u = R.cieloSky.material.uniforms; u.turbidity.value = C.turb; u.rayleigh.value = C.ray; u.mieCoefficient.value = C.mie; u.mieDirectionalG.value = C.g; u.sunPosition.value.copy(solDir).multiplyScalar(400); u.uGan.value = C.gan; }
     R.solBase = (LUCES[n] || LUCES.Natural).i * C.sol; R.hemiBase = (LUCES[n] || LUCES.Natural).h * .35; R.abS = -1;
     scene.fog = new THREE.FogExp2(C.niebla, C.dens);
     const pedido = n; entornoHDR(C.hdr).then(env => { if (R.ambiente === pedido && R.activo) { scene.environment = env; R.envAct = env; } }).catch(e => console.warn(e));
@@ -2033,16 +2052,25 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
   R.quietaDesde = 0; R.ultPintado = 0; R.sucio = true;
   ["pointerdown", "pointermove", "keydown", "wheel", "resize", "scroll"].forEach(ev => addEventListener(ev, () => R.sucio = true, { passive: true, capture: true }));
   function hacePintar(ahora) {
-    const f = camera.matrixWorld.elements, firma = f[12].toFixed(3) + f[13].toFixed(3) + f[14].toFixed(3) + f[0].toFixed(4) + f[2].toFixed(4) + f[9].toFixed(4) + camera.fov + T.clip;
-    if (firma !== R.firma || R.sucio || R.antes.length > 2 || T.fly || Object.values(T.teclas).some(Boolean) || T.joy.id !== null) { R.firma = firma; R.sucio = false; R.quietaDesde = ahora; return true; }
+    const f = camera.matrixWorld.elements, F = R.firmaN || (R.firmaN = new Float64Array(8)), nuevos = [f[12], f[13], f[14], f[0], f[2], f[9], camera.fov, T.clip];
+    let cambia = false; for (let i = 0; i < 8; i++) if (Math.abs(nuevos[i] - F[i]) > 1e-4) { cambia = true; F[i] = nuevos[i]; }
+    if (cambia || R.sucio || R.antes.length > 2 || T.fly || Object.values(T.teclas).some(Boolean) || T.joy.id !== null) { R.sucio = false; R.quietaDesde = ahora; return true; }
     const quieta = ahora - R.quietaDesde, cada = quieta > 6000 ? 500 : quieta > 400 ? 100 : 0;
     return ahora - R.ultPintado >= cada;
+  }
+  /* Si algo tapa la vista 3D por completo, no se dibuja */
+  const TAPAN = ["galeria", "panelD", "legal", "catalogo", "unir", "editor"].map(i => document.getElementById(i)).filter(Boolean);
+  let pieY = 0; const midePie = () => { const p = document.getElementById("pie"); pieY = p ? p.offsetTop + 260 : 1e9; }; addEventListener("resize", midePie); setTimeout(midePie, 3000);
+  function tapada() {
+    for (const e of TAPAN) if (!e.hidden) return true;
+    if (T.modo === "portada") { if (!pieY) midePie(); const po = document.getElementById("portada"); return po && po.scrollTop > pieY; }
+    return false;
   }
   function pintar(forzar = true) {
     const ahora = performance.now(), dtP = Math.min(.05, (ahora - R.ultT) / 1000); R.ultT = ahora; R.antes.forEach(f => f(dtP, ahora));
     camera.updateMatrixWorld();
-    if (!forzar && !hacePintar(ahora)) return;
-    R.ultPintado = ahora; R.nPint = (R.nPint || 0) + 1;
+    if (!forzar && (tapada() || !hacePintar(ahora))) return;
+    R.ultPintado = ahora; horneaCielo(); R.nPint = (R.nPint || 0) + 1;
     R.t += 1 / 60; U_R.uT.value = ahora / 1000; casaAbierta();
     if (R.comparar && R.activo) { pintaComparado(); return; }
     /* Plano cercano según el modo: de lejos, más precisión de profundidad */
@@ -2060,7 +2088,9 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     renderer.setRenderTarget(PQ.hdr); renderer.render(scene, camera);
     const ao = R.nivel >= 2;
     /* Si la cámara no se ha movido, la oclusión del fotograma anterior sigue valiendo: no se repite */
-    const firma = camera.matrixWorld.elements.join() + camera.projectionMatrix.elements[0] + PQ.w, quieta = firma === PQ.firmaAO && !R.aoSucio; PQ.firmaAO = firma; R.aoSucio = false;
+    const me = camera.matrixWorld.elements, fa = PQ.firmaAO || (PQ.firmaAO = new Float64Array(18)); let quieta = !R.aoSucio;
+    for (let i = 0; i < 16; i++) if (fa[i] !== me[i]) { quieta = false; fa[i] = me[i]; }
+    if (fa[16] !== camera.projectionMatrix.elements[0] || fa[17] !== PQ.w) { quieta = false; fa[16] = camera.projectionMatrix.elements[0]; fa[17] = PQ.w; } R.aoSucio = false;
     if (ao && !quieta) {
       const vis = [], fog = scene.fog; R.transparentes.forEach(o => { if (o.visible) { vis.push(o); o.visible = false; } }); if (R.cielo) R.cielo.visible = false; R.luces.forEach(l => l.visible = false);
       const fondo = scene.background; scene.background = null; scene.fog = null; scene.overrideMaterial = PQ.mNor;
@@ -2119,6 +2149,8 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
   function extrasMateriales() {
     const on = R.nivel >= 2, todos = [...R.mats.values(), ...(matsCoche ? [...matsCoche.pintura, matsCoche.cristal, matsCoche.carbono] : [])];
     todos.forEach(m => { if (!m.isMeshPhysicalMaterial) return; const u = m.userData; if (u.cc0 === undefined) { u.cc0 = m.clearcoat; u.sh0 = m.sheen; } const cc = on ? u.cc0 : 0, sh = on ? u.sh0 : 0; if (m.clearcoat !== cc || m.sheen !== sh) { m.clearcoat = cc; m.sheen = sh; } });
+    const tipoS = R.nivel >= 2 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap; if (renderer.shadowMap.type !== tipoS) { renderer.shadowMap.type = tipoS; renderer.shadowMap.needsUpdate = true; }
+    const lig = R.nivel === 0; if (R.ligeroPrev !== lig) { R.ligeroPrev = lig; R.mats.forEach(m => m.needsUpdate = true); }
     const an = Math.min(renderer.capabilities.getMaxAnisotropy(), R.nivel >= 2 ? 16 : R.nivel ? 8 : 4); R.tex.forEach(t => { if (t.anisotropy !== an) { t.anisotropy = an; t.needsUpdate = true; } });
   }
   function ponNivel(n, fijo) {
@@ -2141,7 +2173,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
   }
   nivelInicial();
   /* Las texturas y materiales que se crean después también siguen el nivel */
-  setTimeout(extrasMateriales, 4000);
+  setTimeout(extrasMateriales, 0); setTimeout(extrasMateriales, 4000);
 
   /* ---------- Optimización: une piezas por material y cambia los coches por superdeportivos ----------
      La villa trae 123 objetos partidos en casi 500 piezas, es decir, cientos de llamadas de dibujo
@@ -4616,7 +4648,9 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     document.addEventListener("pointerleave", () => { vis = false; document.documentElement.classList.remove("con-cursor"); });
     const ACT = "button, a, label[for], [role='button'], [role='switch'], input[type='range'], .seg button, summary";
     document.addEventListener("pointerover", e => { const s = e.target.closest && e.target.closest(ACT); ani.classList.toggle("sobre", !!s); pun.classList.toggle("sobre", !!s); });
-    (function mueve() { ax += (mx - ax) * .2; ay += (my - ay) * .2; const oculto = document.pointerLockElement; pun.style.transform = `translate(${mx}px,${my}px)`; ani.style.transform = `translate(${ax}px,${ay}px)`; pun.style.opacity = ani.style.opacity = oculto ? 0 : ""; requestAnimationFrame(mueve); })();
+    /* El cursor solo se anima mientras se mueve: en reposo no consume nada */
+    let vivo = false; const mueve = () => { ax += (mx - ax) * .2; ay += (my - ay) * .2; const oculto = document.pointerLockElement; pun.style.transform = `translate(${mx}px,${my}px)`; ani.style.transform = `translate(${ax}px,${ay}px)`; pun.style.opacity = ani.style.opacity = oculto ? 0 : ""; if (Math.abs(mx - ax) + Math.abs(my - ay) > .3) requestAnimationFrame(mueve); else vivo = false; };
+    addEventListener("pointermove", () => { if (!vivo) { vivo = true; requestAnimationFrame(mueve); } }, { passive: true });
     const IMAN = "#muestra, #cargar, .azul, .btn-luz, .fantasma, #acceso .principal";
     document.addEventListener("pointermove", e => { const b = e.target.closest && e.target.closest(IMAN); document.querySelectorAll(".iman").forEach(x => { if (x !== b) { x.classList.remove("iman"); x.style.translate = ""; } }); if (!b) return; const q = b.getBoundingClientRect(), dx = e.clientX - (q.left + q.width / 2), dy = e.clientY - (q.top + q.height / 2); b.classList.add("iman"); b.style.translate = `${(dx * .18).toFixed(1)}px ${(dy * .28).toFixed(1)}px`; }, { passive: true });
   }
