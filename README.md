@@ -67,6 +67,12 @@ La web ya apunta al proyecto de Supabase. Las claves de `CONFIG` son públicas p
 
 Nunca pongas en el código la clave de Gemini ni la clave `service_role` de Supabase.
 
+## Portada con escultura y modelos de ejemplo
+
+- La portada ya no descarga la villa: muestra una **escultura de obsidiana con vetas de oro** generada por código (0 KB), en un estudio oscuro, que se transforma al hacer scroll (nudo, espiral, esfera y oro) y se dibuja a resolución completa.
+- **Modelos de ejemplo** (Explorar o «Modelos de ejemplo»): villa contemporánea simplificada (38 600 triángulos, 258 KB), loft minimalista, pabellón de cristal, superdeportivo en sala de exposición y galería con la escultura. Los cuatro últimos se generan al momento y se abren de noche con el estilo «Oscuro».
+- `fuente/obj2glb.py` acepta materiales y objetos a quitar: `python3 fuente/obj2glb.py villa.obj villa.mtl villa.glb "hoja_tropical|cristal_lampara|flores_.*|libro_.|maceta" "Palmera_(0[2468]|10|12|14)"`.
+
 ## Carga rápida
 
 - La web arranca siempre en **Básica**; la calidad se sube en Ajustes, en «Efectos de luz».

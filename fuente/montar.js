@@ -10,6 +10,7 @@ const out = f("web.html")
   .replace("/*__IA3__*/", () => f("ia3.js"))
   .replace("/*__SOCIAL__*/", () => f("social.js"))
   .replace("/*__INTEGRA__*/", () => f("integra.js"))
+  .replace("/*__MUESTRAS__*/", () => f("muestras.js"))
   .replace("/*__REAL__*/", () => f("realismo.js"))
   .replace("/*__OPTIMIZA__*/", () => f("optimiza.js"))
   .replace("/*__HERR__*/", () => f("herramientas.js"))
@@ -21,5 +22,5 @@ const out = f("web.html")
   .replace("/*__LUZ__*/", () => "const LUZ = " + f("luz.json") + ";");
 const raiz = path.join(__dirname, "..");
 fs.writeFileSync(path.join(raiz, "planta-caminable.html"), out);
-fs.writeFileSync(path.join(raiz, "index.html"), '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="preload" href="modelos/villa.zip" as="fetch" crossorigin="anonymous"><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="icon" href="logo.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icono-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta property="og:title" content="INNRA3D"><meta property="og:description" content="Recorre cualquier casa en 3D desde el navegador, con luz real e inteligencia artificial."></head><body>' + out + "</body></html>");
+fs.writeFileSync(path.join(raiz, "index.html"), '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="prefetch" href="modelos/villa.zip"><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="icon" href="logo.svg" type="image/svg+xml"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icono-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta property="og:title" content="INNRA3D"><meta property="og:description" content="Recorre cualquier casa en 3D desde el navegador, con luz real e inteligencia artificial."></head><body>' + out + "</body></html>");
 console.log("ok", out.length);

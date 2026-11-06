@@ -5,8 +5,10 @@
 - Vértices sin repetir e índices de 16 bits por primitiva cuando caben.
 - Un nodo por objeto (conserva los nombres CUB_ y PA_ que usa la portada) y un material por nombre.
 
-Uso: python3 fuente/obj2glb.py modelo.obj modelo.mtl salida.glb
+Uso: python3 fuente/obj2glb.py modelo.obj modelo.mtl salida.glb [materiales_a_quitar] [objetos_a_quitar]
+  Los dos últimos son expresiones regulares, por ejemplo "hoja_tropical|flores_.*" y "Palmera_0[2468]".
 """
+import re
 import json, struct, sys, math
 from collections import OrderedDict
 
@@ -45,8 +47,11 @@ def normal_cara(V, a, b, c):
     n = (uy * wz - uz * wy, uz * wx - ux * wz, ux * wy - uy * wx); l = math.sqrt(sum(x * x for x in n)) or 1
     return tuple(x / l for x in n)
 
-def convierte(obj, mtl, salida):
+def convierte(obj, mtl, salida, quitaMat="", quitaObj=""):
     mats = lee_mtl(mtl); V, N, objetos = lee_obj(obj)
+    rm, ro = (re.compile(quitaMat) if quitaMat else None), (re.compile(quitaObj) if quitaObj else None)
+    objetos = OrderedDict((o, OrderedDict((m, c) for m, c in pm.items() if not (rm and m and rm.fullmatch(m)))) for o, pm in objetos.items() if not (ro and ro.search(o)))
+    objetos = OrderedDict((o, pm) for o, pm in objetos.items() if pm)
     nombres_mat = list(OrderedDict.fromkeys([m for o in objetos.values() for m in o] ))
     bin_, vistas, accesos, mallas, nodos = bytearray(), [], [], [], []
     def vista(datos, destino=None):
@@ -103,4 +108,4 @@ def convierte(obj, mtl, salida):
     print("ok", salida, total, "bytes,", len(nodos), "nodos,", len(materiales), "materiales")
 
 if __name__ == "__main__":
-    convierte(*sys.argv[1:4])
+    convierte(*sys.argv[1:6])
