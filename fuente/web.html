@@ -950,7 +950,7 @@ const CONFIG = { accesoObligatorio: false, modelUrl: null, modeloPortada: null, 
     return t.set(T.centro.x + Math.sin(T.orbit) * Math.cos(T.elev) * R, T.centro.y + Math.sin(T.elev) * R, T.centro.z + Math.cos(T.orbit) * Math.cos(T.elev) * R);
   }
   const clipMaq = () => P ? P.floorY + Math.min(2.25, P.ceilH - .35) : 1000;
-  function volar(aPos, aQuat, aClip, fin, dur = 1.3) {
+  function volar(aPos, aQuat, aClip, fin, dur = .85) {
     if (calmo) { camera.position.copy(aPos); camera.quaternion.copy(aQuat); T.clip = aClip; fin(); return; }
     T.fly = { p0: camera.position.clone(), q0: camera.quaternion.clone(), c0: Math.min(T.clip, (P ? P.floorY : 0) + 14), p1: aPos.clone(), q1: aQuat.clone(), c1: aClip, t: 0, dur, fin };
     T.modo = "vuelo";
@@ -1003,7 +1003,7 @@ const CONFIG = { accesoObligatorio: false, modelUrl: null, modeloPortada: null, 
     const w = $("vista").clientWidth, h = $("vista").clientHeight;
     /* Presupuesto de píxeles: en monitores grandes no se dibuja a más de unos 3,7 millones de píxeles (≈ 2560 × 1440);
        la nitidez final la recupera el realce del posproceso. Por encima de eso solo se gasta memoria y se pierde fluidez */
-    const pr = Aj.calidad || (T.modo === "portada" && pf && pf.escultura ? 2 : tactil ? 2 : 1.5), presu = (T.modo === "portada" && pf && pf.escultura ? (tactil ? 2.2e6 : 3e6) : R && R.modoRend ? 1.3e6 : tactil ? 2.2e6 : !R || R.nivel >= 2 ? 3.7e6 : R.nivel === 1 ? 2.6e6 : 1.9e6), tope = Math.sqrt(presu / Math.max(1, w * h));
+    const pr = Aj.calidad || (T.modo === "portada" && pf && pf.escultura ? 2 : tactil ? 2 : 1.5), presu = (T.modo === "portada" && pf && pf.escultura ? (tactil ? 1.2e6 : 1.8e6) : R && R.modoRend ? 1.3e6 : tactil ? 2.2e6 : !R || R.nivel >= 2 ? 3.7e6 : R.nivel === 1 ? 2.6e6 : 1.9e6), tope = Math.sqrt(presu / Math.max(1, w * h));
     renderer.setPixelRatio(Math.max(.5, Math.min(devicePixelRatio || 1, pr, Aj.calidad ? 9 : tope)) * (R ? R.escala : 1)); renderer.setSize(w, h, false);
     camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
   }
@@ -1247,7 +1247,7 @@ const CONFIG = { accesoObligatorio: false, modelUrl: null, modeloPortada: null, 
     f -= T.joy.y; s += T.joy.x;
     let wx = 0, wz = 0;
     if (f || s) { const l = Math.max(1, Math.hypot(f, s)), sy = Math.sin(T.yaw), cy = Math.cos(T.yaw), vel = (k.ShiftLeft || k.ShiftRight ? 3.4 : 1.9) * (T.libre ? 1.6 : 1) * Aj.vel; wx = (-sy * f + cy * s) / l * vel; wz = (-cy * f - sy * s) / l * vel; }
-    const a = 1 - Math.exp(-dt * 12); T.vx += (wx - T.vx) * a; T.vz += (wz - T.vz) * a;
+    const a = 1 - Math.exp(-dt * 18); T.vx += (wx - T.vx) * a; T.vz += (wz - T.vz) * a;
     if (Math.abs(T.vx) < .01 && !wx) T.vx = 0; if (Math.abs(T.vz) < .01 && !wz) T.vz = 0;
     let nx = T.x + T.vx * dt, nz = T.z + T.vz * dt;
     if (T.libre) {

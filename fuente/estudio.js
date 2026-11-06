@@ -28,7 +28,7 @@
     const p0 = camera.position.clone(), q0 = camera.quaternion.clone(), desdePortada = T.modo === "portada" && pf.listo;
     comenzarBase(extra);
     if (!desdePortada || calmo || !R.activo || T.nubes) return;
-    const destino = new THREE.Vector3(T.x, T.py + T.eye, T.z), q = new THREE.Quaternion().setFromEuler(new THREE.Euler(T.pitch, T.yaw, 0, "YXZ")), dur = 2.8;
+    const destino = new THREE.Vector3(T.x, T.py + T.eye, T.z), q = new THREE.Quaternion().setFromEuler(new THREE.Euler(T.pitch, T.yaw, 0, "YXZ")), dur = 1.5;
     camera.position.copy(p0); camera.quaternion.copy(q0);
     volar(destino, q, 1000, () => { T.modo = "andar"; T.clip = 1000; hudSala(); }, dur);
     const v = $("velo"); v.style.transition = "opacity .45s ease";
@@ -36,7 +36,7 @@
   };
 
   /* ---------- Cursor, botones magnéticos y sonido suave opcional ---------- */
-  if (matchMedia("(pointer: fine)").matches && !calmo) {
+  if (false) { /* Cursor nativo: respuesta inmediata, sin retardo */
     const pun = document.createElement("div"), ani = document.createElement("div"); pun.id = "cursor"; ani.id = "cursorAni"; document.body.append(pun, ani);
     let mx = innerWidth / 2, my = innerHeight / 2, ax = mx, ay = my, vis = false;
     addEventListener("pointermove", e => { mx = e.clientX; my = e.clientY; if (!vis) { vis = true; document.documentElement.classList.add("con-cursor"); } }, { passive: true });
