@@ -172,6 +172,7 @@
   function guardaOriginal(n, m) { if (ORIG.has(n)) return; const u = m.userData.un || {}; ORIG.set(n, { color: m.color.clone(), r: m.roughness, mt: m.metalness, tC: u.tC && u.tC.value, tN: u.tN && u.tN.value, tR: u.tR && u.tR.value, esc: u.uEsc && u.uEsc.value.clone(), media: u.uMedia && u.uMedia.value.clone(), rm: u.uRM && u.uRM.value }); }
   function restaura(n, m) { const o = ORIG.get(n); if (!o) return; const u = m.userData.un || {}; m.color.copy(o.color); m.roughness = o.r; m.metalness = o.mt; if (u.tC) { u.tC.value = o.tC; u.tN.value = o.tN; if (u.tR) u.tR.value = o.tR; u.uEsc.value.copy(o.esc); u.uMedia.value.copy(o.media); u.uRM.value = o.rm; } }
   function aplicaEstilo(est, rapido) {
+    R.sucio = true;
     const e = typeof est === "string" ? ESTILOS[est] : est;
     Object.values(GRUPOS).flat().forEach(n => { const m = R.mats.get(n); if (m) { guardaOriginal(n, m); restaura(n, m); } });
     if (!e) { if (!rapido) R.estilo = "Original"; return; }

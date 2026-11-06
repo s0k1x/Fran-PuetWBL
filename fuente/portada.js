@@ -70,7 +70,7 @@
     const q = vista.getBoundingClientRect(), vis = Math.max(0, 1 - Math.abs(pf.s - 6) * 2.2), eti = $("etiP"); eti.style.opacity = vis; eti.hidden = vis < .01;
     if (vis >= .01) pf.eti.forEach(e => { v3.set(e.x, pf.base + .3, e.z).project(camera); e.el.style.transform = `translate(-50%,-50%) translate(${(v3.x + 1) / 2 * q.width}px,${(1 - v3.y) / 2 * q.height}px)`; });
     R.abObj = pf.cortar ? 1 : pf.capas ? Math.min(1, Math.max(A.k + (B.k - A.k) * t, A.a + (B.a - A.a) * t, A.x + (B.x - A.x) * t) * 1.4) : (T.clip < 50 ? 1 : 0);
-    corte.constant = T.clip; usarReal("portada"); vigilaRitmo(dt); pintar();
+    corte.constant = T.clip; usarReal("portada"); vigilaRitmo(dt); pintar(false);
     $("avance").style.transform = `scaleY(${portada.scrollTop / Math.max(1, portada.scrollHeight - alto)})`;
     if (pf.foto) { pf.foto = false; vista.toBlob(b => guardar(b, "portada.png"), "image/png"); }
   }
