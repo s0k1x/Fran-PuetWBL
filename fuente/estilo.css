@@ -668,3 +668,6 @@ body, #app, #cargador { background: #000; }
 html.claro #barraP.solida { border-bottom-color: rgba(0, 0, 0, .06); }
 html.claro .cifras span, html.claro #etiPlanta { color: #8b8a84; }
 @media (max-width: 960px) { #barraP .icono { display: none; } }
+/* Fotos de los modelos de ejemplo: el número flota sobre un degradado suave */
+.tarjetaG .img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(8, 8, 7, .62)); pointer-events: none; }
+.tarjetaG .num { z-index: 1; }

@@ -888,6 +888,9 @@ body, #app, #cargador { background: #000; }
 html.claro #barraP.solida { border-bottom-color: rgba(0, 0, 0, .06); }
 html.claro .cifras span, html.claro #etiPlanta { color: #8b8a84; }
 @media (max-width: 960px) { #barraP .icono { display: none; } }
+/* Fotos de los modelos de ejemplo: el número flota sobre un degradado suave */
+.tarjetaG .img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(8, 8, 7, .62)); pointer-events: none; }
+.tarjetaG .num { z-index: 1; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
@@ -5404,6 +5407,11 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     const M = {}, mat = n => M[n] || (M[n] = mn(n));
     return (n, w, h, d, x, y, z, nombre) => { const e = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(n)); e.position.set(x + w / 2, y + h / 2, z + d / 2); e.name = nombre || n; g.add(e); return e; };
   }
+  /* Iluminación propia de cada ejemplo: se ven bien a cualquier hora, aunque sean salas cerradas */
+  function luzEstudio(g, { cielo = 0xfff4e8, suelo = 0x2a2622, amb = .55, clave = 1.1, relleno = .45, pos = [6, 9, 5] } = {}) {
+    const h = new THREE.HemisphereLight(cielo, suelo, amb), k = new THREE.DirectionalLight(0xfff2e2, clave), f = new THREE.DirectionalLight(0xcfdcff, relleno);
+    k.position.set(...pos); f.position.set(-pos[0], pos[1] * .6, -pos[2]); g.add(h, k, f); return g;
+  }
   const estanciaM = (name, x0, x1, z0, z1, y = 0) => ({ name, x: (x0 + x1) / 2, y, z: (z0 + z1) / 2, area: Math.round((x1 - x0) * (z1 - z0) * 10) / 10, rects: [[x0, x1, z0, z1]] });
   /* Loft minimalista: salón-cocina con ventanal, dormitorio, baño y terraza */
   function creaLoft() {
@@ -5435,7 +5443,8 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     [[2.9, 5.6], [6.7, 5.9], [5.7, 2.4], [10.2, 1.6], [3.2, 6.9]].forEach(([x, z]) => B("luz_calida", .5, .03, .5, x - .25, H - .04, z - .25));
     B("tela_crema", 1.8, .38, .8, 2, .02, 10.2); B("nogal", .6, .35, .6, 4.2, .02, 10.3);
     g.traverse(o => { if (o.isMesh) { o.castShadow = o.material.name !== "vidrio"; o.receiveShadow = true; } });
-    return { g, rooms: [estanciaM("Salón y cocina", 0, 8, 0, 9), estanciaM("Dormitorio", 8, 12, 0, 4.4), estanciaM("Baño", 8, 12, 4.45, 7), estanciaM("Recibidor", 8, 12, 7, 9), estanciaM("Terraza", -1, 13, 9, 12)], nombre: "Loft minimalista" };
+    luzEstudio(g, { amb: .5, clave: .7, relleno: .35 });
+    return { g, amb: "Atardecer", estilo: "Oscuro", rooms: [estanciaM("Salón y cocina", 0, 8, 0, 9), estanciaM("Dormitorio", 8, 12, 0, 4.4), estanciaM("Baño", 8, 12, 4.45, 7), estanciaM("Recibidor", 8, 12, 7, 9), estanciaM("Terraza", -1, 13, 9, 12)], nombre: "Loft minimalista" };
   }
   /* Pabellón de cristal: losa volada sobre pilares finos, muros de piedra y lámina de agua */
   function creaPabellon() {
@@ -5449,18 +5458,20 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     B("cuero_cognac", .8, .42, .8, 9.2, .27, 7); B("cuero_cognac", .8, .42, .8, 10.4, .27, 7); B("metal_negro", .8, .04, .8, 9.2, .27, 7); B("vidrio", 1.1, .04, .6, 9.6, .62, 8.1);
     B("alfombra", 4, .012, 3, 8.6, .28, 6.4); B("estuco_blanco", 3, 2.2, .05, 0, .27, 12.4);
     g.traverse(o => { if (o.isMesh) { o.castShadow = o.material.name !== "vidrio"; o.receiveShadow = true; } });
-    return { g, rooms: [estanciaM("Pabellón", 5.5, 16.2, 3.1, 9.9, .27), estanciaM("Lámina de agua", -1.5, 4.5, 1.2, 6.2, .27)], nombre: "Pabellón de cristal" };
+    luzEstudio(g, { amb: .45, clave: .5, relleno: .3 });
+    return { g, amb: "Atardecer", estilo: "Oscuro", rooms: [estanciaM("Pabellón", 5.5, 16.2, 3.1, 9.9, .27), estanciaM("Lámina de agua", -1.5, 4.5, 1.2, 6.2, .27)], nombre: "Pabellón de cristal" };
   }
   /* Sala de exposición con el superdeportivo */
   function creaShowroom() {
     const g = new THREE.Group(), B = constructor(g);
     B("hormigon_pulido", 22, .3, 18, -11, -.3, -9); B("estuco_blanco", 22, 5, .2, -11, 0, -9.2); B("estuco_blanco", .2, 5, 18, -11.2, 0, -9); B("estuco_blanco", .2, 5, 18, 11, 0, -9);
-    B("techo_blanco", 22.4, .2, 18.2, -11.2, 5, -9.2); B("piedra_oscura", 7, .12, 4, -3.5, 0, -2);
+    B("techo_blanco", 22.4, .2, 18.2, -11.2, 5, -9.2); B("marmol_negro", 7, .12, 4, -3.5, 0, -2);
     for (let i = -8; i <= 8; i += 4) B("luz_calida", .3, .03, 12, i - .15, 4.96, -6);
     const k = { caja: new THREE.Box3(V3(-2.4, .12, -1), V3(2.4, 1.3, 1)), faros: V3(3, .6, 0), nf: 1, suelo: .12 };
     g.add(supercoche(k, 0));
     g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-    return { g, rooms: [estanciaM("Sala de exposición", -11, 11, -9, 9)], nombre: "Superdeportivo" };
+    luzEstudio(g, { amb: .9, clave: 1.6, relleno: .8, pos: [4, 8, 6] });
+    return { g, amb: "Blanco", estilo: "Original", rooms: [estanciaM("Sala de exposición", -11, 11, -9, 9)], nombre: "Superdeportivo" };
   }
   /* Galería de arte con la escultura en el centro */
   function creaGaleriaArte() {
@@ -5471,14 +5482,15 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
         const e = new THREE.Mesh(geoEscultura(), matEscultura()); e.position.y = 1.62; e.morphTargetInfluences = [0, 0]; e.castShadow = true; e.name = "escultura"; g.add(e);
     for (let i = -6; i <= 6; i += 3) B("luz_calida", .25, .03, 9, i - .12, 4.16, -4.5);
     g.traverse(o => { if (o.isMesh) { o.receiveShadow = true; if (o.castShadow !== true) o.castShadow = true; } });
-    return { g, rooms: [estanciaM("Galería", -8, 8, -6, 6)], nombre: "Galería con escultura" };
+    luzEstudio(g, { amb: .8, clave: 1.2, relleno: .6, pos: [3, 9, 4] });
+    return { g, amb: "Blanco", estilo: "Original", rooms: [estanciaM("Galería", -8, 8, -6, 6)], nombre: "Galería con escultura" };
   }
   const MUESTRAS = [
-    { n: "Villa contemporánea", d: "Dos plantas, piscina y jardín · 38 000 triángulos", f: () => $("muestra").click() },
-    { n: "Loft minimalista", d: "Salón-cocina, dormitorio y baño · generado al momento", c: creaLoft },
-    { n: "Pabellón de cristal", d: "Losa volada, mármol y lámina de agua", c: creaPabellon },
-    { n: "Superdeportivo", d: "Sala de exposición para rodearlo", c: creaShowroom },
-    { n: "Galería con escultura", d: "Recorre la pieza de la portada", c: creaGaleriaArte }
+    { n: "Villa contemporánea", d: "Dos plantas, piscina y jardín", foto: "villa", f: () => $("muestra").click() },
+    { n: "Loft minimalista", d: "Salón-cocina, dormitorio y baño", foto: "loft", c: creaLoft },
+    { n: "Pabellón de cristal", d: "Losa volada, mármol y lámina de agua", foto: "pabellon", c: creaPabellon },
+    { n: "Superdeportivo", d: "Sala de exposición para rodearlo", foto: "superdeportivo", c: creaShowroom },
+    { n: "Galería con escultura", d: "Recorre la pieza de la portada", foto: "galeria", c: creaGaleriaArte }
   ];
   async function abreMuestra(mu) {
     $("galeria").hidden = true; cierraPanel();
@@ -5487,7 +5499,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     try {
       await estado("Construyendo " + mu.n.toLowerCase()); const r = mu.c(); H.fuentes = null; H.ruta = null;
       /* Los ejemplos se abren en su versión oscura y minimalista: de noche y con las luces encendidas */
-      const k = "pc:datos:" + r.nombre, d0 = guarda.leer(k); if (!d0) guarda.poner(k, { puntos: [], muebles: [], vistas: [], suelo: "", pared: "", amb: "Noche", estilo: "Oscuro" });
+      const k = "pc:datos:" + r.nombre, d0 = guarda.leer(k); if (!d0 || d0.v !== 2) guarda.poner(k, Object.assign({}, d0 || { puntos: [], muebles: [], vistas: [], suelo: "", pared: "" }, { v: 2, amb: r.amb || "Atardecer", estilo: r.estilo || "Oscuro" }));
       await instalar(r.g, "glb", r.nombre, { rooms: r.rooms }); ponLuces(true);
     }
     catch (e) { console.error(e); fallo(motivo(e)); }
@@ -5499,7 +5511,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     caja.querySelectorAll(".tarjetaG").forEach((b, i) => { if (i === 0) b.remove(); });
     const GR = ["linear-gradient(135deg,#2b3a2e,#0d120e)", "linear-gradient(135deg,#3a332a,#120f0c)", "linear-gradient(135deg,#25313a,#0b0f12)", "linear-gradient(135deg,#3a1414,#120606)", "linear-gradient(135deg,#34322d,#0f0e0c)"];
     const t = texto("p", "eti"); t.innerHTML = "<b>00</b>Modelos de ejemplo"; t.style.gridColumn = "1 / -1"; caja.prepend(t);
-    MUESTRAS.slice().reverse().forEach((mu, k) => { const i = MUESTRAS.length - 1 - k, b = texto("button", "tarjetaG"); b.type = "button"; b.innerHTML = `<span class="img" style="background:${GR[i]}"><span class="num">${String(i + 1).padStart(2, "0")}</span></span><span class="info"><b></b><small></small></span>`; b.querySelector("b").textContent = mu.n; b.querySelector("small").textContent = mu.d; b.onclick = () => abreMuestra(mu); t.after(b); });
+    MUESTRAS.slice().reverse().forEach((mu, k) => { const i = MUESTRAS.length - 1 - k, b = texto("button", "tarjetaG"); b.type = "button"; b.innerHTML = `<span class="img" style="background:${GR[i]}"><img src="muestras/${mu.foto}.jpg" alt="" loading="lazy" decoding="async" onerror="this.remove()"><span class="num">${String(i + 1).padStart(2, "0")}</span></span><span class="info"><b></b><small></small></span>`; b.querySelector("b").textContent = mu.n; b.querySelector("small").textContent = mu.d; b.onclick = () => abreMuestra(mu); t.after(b); });
   };
   /* Explorar: los modelos de ejemplo a mano */
   BOTONES.vista = function (p) {
