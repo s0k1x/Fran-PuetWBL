@@ -1000,7 +1000,10 @@ const CONFIG = { accesoObligatorio: false, modelUrl: null, modeloPortada: "model
   function medir() {
     PQ.w = 0;
     const w = $("vista").clientWidth, h = $("vista").clientHeight;
-    const pr = Aj.calidad || (tactil ? 2 : 1.75); renderer.setPixelRatio(Math.min(devicePixelRatio || 1, pr) * (R ? R.escala : 1)); renderer.setSize(w, h, false);
+    /* Presupuesto de píxeles: en monitores grandes no se dibuja a más de unos 3,7 millones de píxeles (≈ 2560 × 1440);
+       la nitidez final la recupera el realce del posproceso. Por encima de eso solo se gasta memoria y se pierde fluidez */
+    const pr = Aj.calidad || (tactil ? 2 : 1.5), presu = (tactil ? 2.4e6 : R && R.nivel >= 2 ? 3.7e6 : 4.2e6), tope = Math.sqrt(presu / Math.max(1, w * h));
+    renderer.setPixelRatio(Math.max(.5, Math.min(devicePixelRatio || 1, pr, Aj.calidad ? 9 : tope)) * (R ? R.escala : 1)); renderer.setSize(w, h, false);
     camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
   }
   addEventListener("resize", medir);
