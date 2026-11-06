@@ -1253,8 +1253,8 @@ const CONFIG = { accesoObligatorio: false, modelUrl: null, modeloPortada: "model
       T.x = nx; T.z = nz; T.py += u * 2.2 * dt;
     } else if (T.vx || T.vz) {
       const px = T.x, pz = T.z;
-      for (let it = 0; it < 2; it++) for (const h of [.5, 1.05, T.eye - .08]) for (let i = 0; i < 12; i++) {
-        const an = i / 12 * 6.28318, c = Math.cos(an), n = Math.sin(an), d = rayo(nx, T.py + h, nz, c, 0, n, RADIO);
+      for (let it = 0; it < 2; it++) for (const h of [.55, T.eye - .1]) for (let i = 0; i < 8; i++) {
+        const an = i / 8 * 6.28318 + it * .3927, c = Math.cos(an), n = Math.sin(an), d = rayo(nx, T.py + h, nz, c, 0, n, RADIO);
         if (d < RADIO && hN < .8) { nx -= c * (RADIO - d); nz -= n * (RADIO - d); }
       }
       const prueba = (x, z) => { const g = sueloEn(x, T.py, z); if (g === null || g > T.py + PASO) return false; T.x = x; T.z = z; return true; };
@@ -1272,7 +1272,7 @@ const CONFIG = { accesoObligatorio: false, modelUrl: null, modeloPortada: "model
     const q = $("vista").getBoundingClientRect();
     salas.forEach((s, i) => { const vis = s.nivel === T.nivel; etiquetas[i].hidden = !vis; if (!vis) return; v3.set(s.x, P.floorY + .2, s.z).project(camera); etiquetas[i].style.transform = `translate(-50%,-50%) translate(${(v3.x + 1) / 2 * q.width}px,${(1 - v3.y) / 2 * q.height}px)`; });
   }
-  let ult = performance.now(), tM = 0;
+  let ult = performance.now(), tM = 0, mapaF = 0;
   function tick(now) {
     const dt = Math.min(.05, (now - ult) / 1000); ult = now;
     if (T.modo === "portada") { framePortada(dt, now); return; }
@@ -1288,7 +1288,7 @@ const CONFIG = { accesoObligatorio: false, modelUrl: null, modeloPortada: "model
     }
     if (T.muestra) { const wO = $("etiquetas").hidden ? 1 : 0; if (Math.abs(U.uW.value - wO) > .001) { U.uW.value += (wO - U.uW.value) * (1 - Math.exp(-dt * 4)); scene.background.copy(NEGRO).lerp(BLANCO, U.uW.value); } }
     cadaFrame(dt, now);
-    if (now - tM > 33) { tM = now; dibujaMapa(); }
+    if (now - tM > 100) { const fm = T.x + T.z * 7 + T.yaw * 13 + T.nivel + ($("mini").classList.contains("grande") ? 99 : 0); if (fm !== mapaF || now - tM > 1000) { tM = now; mapaF = fm; dibujaMapa(); } }
     R.abObj = T.modo === "orbita" || (T.fly && T.clip < 50) ? 1 : 0;
     corte.constant = T.clip; usarReal("modelo"); vigilaRitmo(dt);
     pintar(false);
