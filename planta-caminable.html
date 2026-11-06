@@ -820,6 +820,17 @@ html.claro .pildora i, html.claro .fantasma .ini { color: #fff; }
 html.claro #cargador .linea i { background: #121212; }
 #cargador.fuera { pointer-events: none; }
 
+/* Rendimiento: nada de vidrio desenfocado encima de la vista 3D, que cambia en cada fotograma.
+   Se sustituye por superficies casi opacas con el mismo aspecto. Las ventanas modales (acceso, textos legales) lo conservan */
+#barraP.solida, #barraP nav, #panelP, #dock, #mini, #esq, #etiPlanta, #pista, #hoja, #ficha, #aviso, #etiP span, #etiquetas button, .pildora, #muestra, #cargar, #fotoUI .barraF, #comparaLin .et, #galletas, #caja, #modoH, #nGente, #barraP.menu nav { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+:root { --sup: rgba(16, 16, 15, .9); --sup2: rgba(20, 20, 19, .96); }
+html.claro { --sup: rgba(250, 249, 246, .94); --sup2: rgba(252, 251, 248, .98); }
+#barraP.solida { background: rgba(8, 8, 8, .9); }
+html.claro #barraP.solida { background: rgba(248, 247, 243, .94); }
+#cursor, #cursorAni { mix-blend-mode: normal; }
+#cursor { box-shadow: 0 0 0 1px rgba(0, 0, 0, .35); }
+#cursorAni { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .75), 0 0 0 1px rgba(0, 0, 0, .25); }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
@@ -1885,7 +1896,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     R.transparentes = new Set(e.trans);
     /* Lámparas reales en las estancias principales: se encienden al atardecer y de noche */
     R.luces.forEach(l => scene.remove(l)); R.luces = [];
-    if (R.nivel >= 1) (e.rooms || []).filter(r => r.rects && !/terraza|balc|garaje|pasillo|distribuidor|almac|cuarto|despensa|bodega/i.test(r.name)).sort((a, b) => b.area - a.area).slice(0, R.nivel >= 2 ? 4 : 0).forEach(r => {
+    if (false) (e.rooms || []).filter(r => r.rects && !/terraza|balc|garaje|pasillo|distribuidor|almac|cuarto|despensa|bodega/i.test(r.name)).sort((a, b) => b.area - a.area).slice(0, R.nivel >= 2 ? 4 : 0).forEach(r => {
       const l = new THREE.PointLight(0xffd2a0, 0, Math.max(7, Math.sqrt(r.area) * 1.6), 2); l.position.set(r.x, (r.y || 0) + 2.45, r.z); scene.add(l); R.luces.push(l);
     });
     R.cielo.visible = R.suelo.visible = true;
@@ -1900,7 +1911,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
   const shQ = (fs, u) => new THREE.ShaderMaterial({ uniforms: u, vertexShader: VS_Q, fragmentShader: fs, depthTest: false, depthWrite: false });
   function paso(mat, destino) { QUAD.material = mat; renderer.setRenderTarget(destino); renderer.render(QUAD, CAM_Q); }
   const FS_AO = `
-    varying vec2 vUv; uniform sampler2D tProf, tNor; uniform mat4 uPI, uP; uniform vec2 uRes; uniform float uRad; uniform vec3 uK[14];
+    varying vec2 vUv; uniform sampler2D tProf, tNor; uniform mat4 uPI, uP; uniform vec2 uRes; uniform float uRad; uniform vec3 uK[10];
     vec3 vista(vec2 uv, float d) { vec4 c = vec4(uv * 2. - 1., d * 2. - 1., 1.); vec4 v = uPI * c; return v.xyz / v.w; }
     void main() {
       float d = texture2D(tProf, vUv).x; if (d >= .9999) { gl_FragColor = vec4(1.); return; }
@@ -1908,14 +1919,14 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
       float r = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(.06711056, .00583715)))) * 6.2831;
       vec3 t = normalize(vec3(cos(r), sin(r), 0.) - n * dot(vec3(cos(r), sin(r), 0.), n)), b = cross(n, t);
       float oc = 0., rad = uRad * clamp(-p.z / 6., .35, 1.6);
-      for (int i = 0; i < 14; i++) {
+      for (int i = 0; i < 10; i++) {
         vec3 s = p + (t * uK[i].x + b * uK[i].y + n * uK[i].z) * rad;
         vec4 q = uP * vec4(s, 1.); q.xy = q.xy / q.w * .5 + .5;
         if (q.x < 0. || q.y < 0. || q.x > 1. || q.y > 1.) continue;
         float sd = vista(q.xy, texture2D(tProf, q.xy).x).z;
         oc += step(s.z + .03, sd) * smoothstep(0., 1., rad / abs(p.z - sd));
       }
-      gl_FragColor = vec4(vec3(1. - oc / 14.), 1.);
+      gl_FragColor = vec4(vec3(1. - oc / 10.), 1.);
     }`;
   const FS_DESENF = `
     varying vec2 vUv; uniform sampler2D tA, tProf; uniform vec2 uDir; uniform mat4 uPI;
@@ -1974,7 +1985,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     const gl2 = renderer.capabilities.isWebGL2, ext = renderer.extensions;
     if (!gl2 || !(ext.has("EXT_color_buffer_float") || ext.has("EXT_color_buffer_half_float"))) return false;
     PQ.tipo = THREE.HalfFloatType;
-    const K = []; for (let i = 0; i < 14; i++) { const a = i * 2.39996, z = .15 + .85 * (i + .5) / 14, r = Math.sqrt(1 - z * z), s = .25 + .75 * ((i * 7 % 14) / 14) ** 2; K.push(new THREE.Vector3(Math.cos(a) * r * s, Math.sin(a) * r * s, z * s)); }
+    const K = []; for (let i = 0; i < 10; i++) { const a = i * 2.39996, z = .15 + .85 * (i + .5) / 10, r = Math.sqrt(1 - z * z), s = .25 + .75 * ((i * 7 % 14) / 14) ** 2; K.push(new THREE.Vector3(Math.cos(a) * r * s, Math.sin(a) * r * s, z * s)); }
     PQ.mAO = shQ(FS_AO, { tProf: { value: null }, tNor: { value: null }, uPI: { value: new THREE.Matrix4() }, uP: { value: new THREE.Matrix4() }, uRes: { value: new THREE.Vector2() }, uRad: { value: .55 }, uK: { value: K } });
     PQ.mDes = shQ(FS_DESENF, { tA: { value: null }, tProf: { value: null }, uDir: { value: new THREE.Vector2() }, uPI: { value: new THREE.Matrix4() } });
     PQ.mBri = shQ(FS_BRILLO, { tA: { value: null }, uUmbral: { value: 1.1 }, uPx: { value: new THREE.Vector2() } });
@@ -1994,7 +2005,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     const hw = w >> 1, hh = h >> 1;
     PQ.pre = rt(hw, hh, { type: THREE.UnsignedByteType, depthBuffer: true, depthTexture: new THREE.DepthTexture(hw, hh, THREE.UnsignedIntType), minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
     PQ.ao1 = rt(hw, hh, { type: THREE.UnsignedByteType }); PQ.ao2 = rt(hw, hh, { type: THREE.UnsignedByteType });
-    PQ.bl = []; let bw = hw, bh = hh; for (let i = 0; i < 5; i++) { PQ.bl.push({ a: rt(bw, bh), b: rt(bw, bh), w: bw, h: bh }); bw = Math.max(1, bw >> 1); bh = Math.max(1, bh >> 1); }
+    PQ.bl = []; let bw = hw, bh = hh; for (let i = 0; i < 4; i++) { PQ.bl.push({ a: rt(bw, bh), b: rt(bw, bh), w: bw, h: bh }); bw = Math.max(1, bw >> 1); bh = Math.max(1, bh >> 1); }
   }
   const usaPost = () => R.nivel >= 1 && PQ.listo && R.activo && !(renderer.xr && renderer.xr.isPresenting);
   /* Casa abierta (sin techo, por plantas o en maqueta): sin sombras interiores y con luz plena para verlo todo */
@@ -2023,7 +2034,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     const cerca = T.modo === "portada" ? .35 : T.modo === "orbita" || T.modo === "vuelo" ? .15 : .05;
     if (camera.near !== cerca) { camera.near = cerca; camera.far = 1500; camera.updateProjectionMatrix(); }
     /* Exposición automática: solo aclara dentro de casa; fuera manda el cielo */
-    if (R.activo) { const d = camDentro() * (1 - R.abS), med = usaPost() ? Math.max(1, R.expMed) : 1.38, obj = 1 + (med - 1) * d; R.expAuto += (obj - R.expAuto) * (calmo ? 1 : .05); } else R.expAuto = 1;
+    if (R.activo) { const d = camDentro() * (1 - R.abS), med = 1.38, obj = 1 + (med - 1) * d; R.expAuto += (obj - R.expAuto) * (calmo ? 1 : .05); } else R.expAuto = 1;
     if (!usaPost()) {
       const tm = renderer.toneMapping; if (tm !== THREE.ACESFilmicToneMapping) { renderer.toneMapping = THREE.ACESFilmicToneMapping; }
       const e = renderer.toneMappingExposure; renderer.toneMappingExposure = e * (R.activo ? R.exp * R.expAuto : 1);
@@ -2033,7 +2044,9 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     if (renderer.toneMapping !== THREE.NoToneMapping) renderer.toneMapping = THREE.NoToneMapping;
     renderer.setRenderTarget(PQ.hdr); renderer.render(scene, camera);
     const ao = R.nivel >= 2;
-    if (ao) {
+    /* Si la cámara no se ha movido, la oclusión del fotograma anterior sigue valiendo: no se repite */
+    const firma = camera.matrixWorld.elements.join() + camera.projectionMatrix.elements[0] + PQ.w, quieta = firma === PQ.firmaAO && !R.aoSucio; PQ.firmaAO = firma; R.aoSucio = false;
+    if (ao && !quieta) {
       const vis = [], fog = scene.fog; R.transparentes.forEach(o => { if (o.visible) { vis.push(o); o.visible = false; } }); if (R.cielo) R.cielo.visible = false; R.luces.forEach(l => l.visible = false);
       const fondo = scene.background; scene.background = null; scene.fog = null; scene.overrideMaterial = PQ.mNor;
       renderer.setRenderTarget(PQ.pre); renderer.setClearColor(0x8080ff, 1); renderer.clear(); renderer.render(scene, camera);
@@ -2049,7 +2062,6 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     for (let i = 1; i < bl.length; i++) { const u = PQ.mBaja.uniforms; u.tA.value = bl[i - 1].a.texture; u.uPx.value.set(1 / bl[i - 1].w, 1 / bl[i - 1].h); paso(PQ.mBaja, bl[i].a); }
     for (let i = bl.length - 1; i > 0; i--) { const u = PQ.mSube.uniforms, src = i === bl.length - 1 ? bl[i].a : bl[i].b; u.tA.value = src.texture; u.tB.value = bl[i - 1].a.texture; u.uPx.value.set(.5 / bl[i].w, .5 / bl[i].h); u.uMez.value = 1; paso(PQ.mSube, bl[i - 1].b); }
     /* Exposición automática: como una cámara, mide la luz media cada pocos fotogramas */
-    if (++PQ.cuenta % 12 === 0) { const l = PQ.mLum.uniforms; l.tA.value = PQ.hdr.texture; paso(PQ.mLum, PQ.lum); renderer.readRenderTargetPixels(PQ.lum, 0, 0, 1, 1, PQ.buf); const lm = Math.pow(2, PQ.buf[0] / 255 * 14 - 10); R.expMed = Math.max(.75, Math.min(1.9, Math.pow(.2 / Math.max(lm, 1e-4), .55))); }
     const f = PQ.mFin.uniforms; f.tHDR.value = PQ.hdr.texture; f.uPx.value.set(1 / PQ.w, 1 / PQ.h); f.uNit.value = tactil ? .38 : .28; f.tAO.value = PQ.ao1.texture; f.tBloom.value = bl[0].b.texture; f.uConAO.value = ao; f.uConBloom.value = true;
     f.tProf.value = PQ.hdr.depthTexture; f.uDof.value = R.dof || 0; f.uFoco.value = R.foco || 5; f.uFundido.value = R.fundido || 0; f.uCam.value.set(camera.near, camera.far);
     f.uExp.value = renderer.toneMappingExposure * R.exp * R.expAuto; f.uT.value = R.t; f.uBloom.value = .06 + U_R.uNoche.value * .025;
@@ -2077,15 +2089,17 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     if (n >= 1 && !preparaPost()) R.nivel = 0;
     const s = R.nivel >= 2 ? 4096 : R.nivel ? 2048 : 1024; if (sol.shadow.mapSize.x !== s) { sol.shadow.mapSize.set(s, s); if (sol.shadow.map) { sol.shadow.map.dispose(); sol.shadow.map = null; } renderer.shadowMap.needsUpdate = true; }
   }
+  /* Resolución dinámica: busca unos 55 fps en ordenador y 40 en móvil. Primero ajusta la resolución interna
+     (casi invisible gracias al realce); solo si no basta, y sin calidad fijada a mano, baja los efectos. Si sobra margen, sube */
   function vigilaRitmo(dt) {
-    if (R.fijo || R.nivel === 0 || document.hidden) return;
-    R.medidas.push(dt); if (R.medidas.length < 120) return;
-    const o = R.medidas.slice().sort((a, b) => a - b), med = o[60]; R.medidas = [];
-    if (med > 1 / 26) {
-      /* Primero baja un poco la resolución interna; solo si no basta, los efectos */
-      if (R.escala > .76) { R.escala = +(R.escala - .12).toFixed(2); medir(); console.info("Resolución interna al", Math.round(R.escala * 100), "%"); }
-      else { ponNivel(R.nivel - 1); console.info("Calidad ajustada a", NIVELES[R.nivel]); }
-    }
+    if (document.hidden || dt <= 0) return;
+    R.medidas.push(dt); if (R.medidas.length < 90) return;
+    const o = R.medidas.slice().sort((a, b) => a - b), med = o[45]; R.medidas = [];
+    const meta = tactil ? 1 / 40 : 1 / 55;
+    if (med > meta * 1.12) {
+      if (R.escala > .62) { R.escala = Math.max(.6, +(R.escala - (med > meta * 1.6 ? .15 : .08)).toFixed(2)); medir(); }
+      else if (!R.fijo && R.nivel > 0 && med > 1 / 32) { ponNivel(R.nivel - 1); R.escala = .85; medir(); console.info("Calidad ajustada a", NIVELES[R.nivel]); }
+    } else if (med < meta * .78 && R.escala < 1) { R.escala = Math.min(1, +(R.escala + .05).toFixed(2)); medir(); }
   }
   nivelInicial();
 
@@ -2778,7 +2792,10 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
   function medir() {
     PQ.w = 0;
     const w = $("vista").clientWidth, h = $("vista").clientHeight;
-    const pr = Aj.calidad || (tactil ? 2 : 1.75); renderer.setPixelRatio(Math.min(devicePixelRatio || 1, pr) * (R ? R.escala : 1)); renderer.setSize(w, h, false);
+    /* Presupuesto de píxeles: en monitores grandes no se dibuja a más de unos 3,7 millones de píxeles (≈ 2560 × 1440);
+       la nitidez final la recupera el realce del posproceso. Por encima de eso solo se gasta memoria y se pierde fluidez */
+    const pr = Aj.calidad || (tactil ? 2 : 1.5), presu = (tactil ? 2.4e6 : R && R.nivel >= 2 ? 3.7e6 : 4.2e6), tope = Math.sqrt(presu / Math.max(1, w * h));
+    renderer.setPixelRatio(Math.max(.5, Math.min(devicePixelRatio || 1, pr, Aj.calidad ? 9 : tope)) * (R ? R.escala : 1)); renderer.setSize(w, h, false);
     camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
   }
   addEventListener("resize", medir);
