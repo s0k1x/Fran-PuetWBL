@@ -248,4 +248,7 @@ if os.path.exists(p):
 
 with open(os.path.join(SAL, "medias.json"), "w") as f:
     json.dump(medias, f, indent=1, sort_keys=True)
+# Texturas que se ven siempre de lejos: más pequeñas para que la web cargue rápido
+for n, (t, q) in {"cesped_c": (768, 80), "grava_c": (512, 80), "follaje_c": (512, 80), "asfalto_c": (512, 78), "tela_c": (512, 80), "tierra_c": (512, 78)}.items():
+    p = os.path.join(SAL, n + ".jpg"); Image.open(p).convert("RGB").resize((t, t), Image.LANCZOS).save(p, quality=q, optimize=True, progressive=True)
 print("ok", len(os.listdir(SAL)), "archivos")
