@@ -139,3 +139,12 @@ El motor 3D, los lectores de formatos y las fuentes se cargan desde jsDelivr y G
 ## Créditos
 
 - Busto de la portada: *Marble Bust 01* de [Poly Haven](https://polyhaven.com/a/marble_bust_01) (CC0). Malla completa (17 500 triángulos) con meshopt y texturas de 512–1024 px (`modelos/busto.glb`, 436 KB).
+
+## Visita 360
+
+Sube fotos o vídeos 360 equirrectangulares (2:1; JPG, PNG, WEBP, MP4, WEBM) con «Fotos 360», desde *Modelos → Visita 360* o arrastrándolos.
+
+- Cada estancia es una caja con la foto proyectada desde su punto de captura: dentro se ve igual que la foto y desde fuera forma la **maqueta** de la casa.
+- Una estancia puede tener **varias vistas** (fotos desde puntos distintos), con marcadores en el suelo para pasar de una a otra.
+- **Organizar**: la IA junta las fotos de la misma estancia, estima dónde se tomó cada una, las medidas y el orden del recorrido. Sin IA, se agrupan por nombre de archivo («salon 1», «salon 2»…). Todo se ajusta a mano: nombre, medidas, posición, giro y estancia de cada foto.
+- Solo la vista activa se carga en alta resolución (hasta 4096 px): memoria contenida con decenas de fotos.
