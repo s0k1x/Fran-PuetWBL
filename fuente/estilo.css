@@ -678,3 +678,43 @@ html.claro .cifras span, html.claro #etiPlanta { color: #8b8a84; }
 #portada > section.revelable > * { opacity: 0; transform: translateY(18px); transition: opacity .5s var(--curva), transform .5s var(--curva); }
 #portada > section.revelable.visto > * { opacity: 1; transform: none; }
 #acceso .perfil .avatar { color: #17140f; font-size: 18px; font-weight: 600; }
+/* ---------- Visita 360 ---------- */
+#tour { position: absolute; inset: 0; z-index: 2; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+#tour:active { cursor: grabbing; }
+#tour .tArr { position: absolute; left: var(--gx); top: calc(14px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; gap: 12px; }
+#tour .tTit { display: grid; gap: 2px; padding: 8px 14px; border-radius: 14px; background: var(--sup); box-shadow: inset 0 0 0 1px var(--linea); }
+#tour .tTit b { font-weight: 500; font-size: 15px; }
+#tour .tTit small { font-family: var(--mono); font-size: 11px; color: var(--gris); }
+#tour .tDock { position: absolute; left: 50%; bottom: var(--gb); transform: translateX(-50%); display: flex; gap: 2px; padding: 6px; border-radius: 20px; background: var(--sup); box-shadow: var(--sombra), inset 0 0 0 1px var(--linea); max-width: calc(100% - 24px); overflow-x: auto; }
+#tour .tool { cursor: pointer; }
+#tour #tAnt .i { transform: scaleX(-1); }
+#tHot { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.tPin { position: absolute; left: 0; top: 0; pointer-events: auto; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 10px; border-radius: 999px; background: rgba(12, 12, 12, .72); color: var(--texto); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22); font-size: 13px; white-space: nowrap; transition: background .2s; }
+.tPin:hover { background: rgba(245, 243, 236, .92); color: #111; }
+.tPin .i { width: 16px; height: 16px; }
+#tVelo { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .18s ease; }
+#ficha.tEd { width: min(480px, calc(100% - var(--gx) - var(--gr))); left: auto; right: var(--gr); top: calc(64px + env(safe-area-inset-top, 0px)); bottom: calc(var(--gb) + 76px); max-height: none; z-index: 6; }
+.tLista { display: grid; gap: 8px; }
+.tFila { display: grid; grid-template-columns: 96px 1fr auto; gap: 10px; align-items: center; padding: 8px; border-radius: 14px; background: rgba(255, 255, 255, .03); box-shadow: inset 0 0 0 1px var(--linea); }
+.tFila img { width: 96px; height: 48px; object-fit: cover; border-radius: 8px; }
+.tCampos { display: grid; gap: 6px; min-width: 0; }
+.tCampos .tN { width: 100%; box-sizing: border-box; padding: 6px 8px; border-radius: 8px; border: 0; background: rgba(255, 255, 255, .05); color: var(--texto); font: inherit; font-size: 13px; box-shadow: inset 0 0 0 1px var(--linea); }
+.tMed { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--gris); flex-wrap: wrap; }
+.tMed input { width: 52px; padding: 4px 6px; border-radius: 6px; border: 0; background: rgba(255, 255, 255, .05); color: var(--texto); font: inherit; font-size: 12px; box-shadow: inset 0 0 0 1px var(--linea); }
+.tGiro { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--gris); }
+.tGiro input { flex: 1; }
+.tAcc { display: grid; grid-template-columns: repeat(2, auto); gap: 4px; }
+.tAcc .tool { min-width: 34px; min-height: 30px; padding: 0 8px; font-size: 12px; }
+@media (max-width: 560px) { .tFila { grid-template-columns: 72px 1fr; } .tFila img { width: 72px; height: 36px; } .tAcc { grid-column: 1 / -1; grid-template-columns: repeat(4, 1fr); } #tour .tDock .tool span { display: none; } }
+#tour .tDock .tool { display: inline-flex; align-items: center; gap: 7px; }
+.tMed input { width: 46px; }
+.tGlob { display: grid; gap: 6px; }
+.tSala { display: grid; gap: 8px; padding: 10px; border-radius: 16px; background: rgba(255, 255, 255, .025); box-shadow: inset 0 0 0 1px var(--linea); }
+.tCab { display: flex; gap: 8px; align-items: center; }
+.tCab .tN { flex: 1; font-weight: 500; }
+.tVistas { display: grid; gap: 6px; }
+.tVistas .tFila { background: rgba(0, 0, 0, .18); }
+.tCampos select { padding: 5px 8px; border-radius: 8px; border: 0; background: rgba(255, 255, 255, .05); color: var(--texto); font: inherit; font-size: 12px; box-shadow: inset 0 0 0 1px var(--linea); }
+.tCampos select option { background: #151515; }
+.tPin.suelo { padding: 6px 12px 6px 8px; background: rgba(245, 243, 236, .9); color: #111; font-size: 12px; }
+.tPin.suelo:hover { background: #fff; }
