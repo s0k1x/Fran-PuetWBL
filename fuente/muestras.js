@@ -95,14 +95,62 @@
     if (pf.foto) { pf.foto = false; vista.toBlob(b => guardar(b, "portada.png"), "image/png"); }
   }
   const frameBase = framePortada;
-  /* Portada ligera: sin modelos 3D. El lienzo no pinta nada hasta que se abre un modelo (salvo que el dueño coloque uno en la portada) */
+  /* ---------- Portada: un busto clásico de mármol (Poly Haven, CC0) · 9 600 triángulos, 242 KB ---------- */
+  /* Solo la pieza, una luz con sombra suave y un contraluz: nada de escenario. Se pinta directo, sin posproceso */
+  const BU = { cam: new THREE.PerspectiveCamera(28, 1, .05, 30), raton: [0, 0], suave: [0, 0], rot: 0 };
+  function sombraContacto() {
+    const c = document.createElement("canvas"); c.width = c.height = 128; const x = c.getContext("2d"), g = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+    g.addColorStop(0, "rgba(0,0,0,.75)"); g.addColorStop(.45, "rgba(0,0,0,.35)"); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, toneMapped: false }));
+    m.rotation.x = -Math.PI / 2; return m;
+  }
+  async function montaBusto() {
+    await pide("loaders/GLTFLoader.js"); await pide("libs/meshopt_decoder.js");
+    const L = new THREE.GLTFLoader(); L.setMeshoptDecoder(window.MeshoptDecoder);
+    const gl = await new Promise((ok, ko) => L.load("modelos/busto.glb", ok, undefined, ko)), e = new THREE.Scene(), m = gl.scene;
+    m.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.material.envMapIntensity = .5; o.material.roughness = 1; } });
+    const caja = new THREE.Box3().setFromObject(m), c = caja.getCenter(V3(0, 0, 0)), k = 1.6 / (caja.max.y - caja.min.y);
+    m.scale.setScalar(k); m.position.set(-c.x * k, -caja.min.y * k, -c.z * k);
+    const piv = new THREE.Group(); piv.add(m); e.add(piv);
+    const clave = new THREE.DirectionalLight(0xffe7cc, 2.4), sc = clave.shadow.camera;
+    clave.position.set(2.4, 3.2, 2.2); clave.castShadow = true; clave.shadow.mapSize.set(1024, 1024); clave.shadow.bias = -.0005; clave.shadow.normalBias = .015; clave.shadow.radius = 4;
+    sc.left = -1.1; sc.right = 1.1; sc.top = 1.9; sc.bottom = -.4; sc.near = .5; sc.far = 9; sc.updateProjectionMatrix();
+    const contra = new THREE.DirectionalLight(0x9fbaff, 1.5); contra.position.set(-2.6, 2.4, -2.4);
+    const suelo = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), new THREE.ShadowMaterial({ opacity: .45 })); suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true;
+    const contacto = sombraContacto(); contacto.scale.setScalar(1.1); contacto.position.y = .002;
+    e.add(clave, clave.target, contra, new THREE.HemisphereLight(0xdfe6ff, 0x0b0a09, .2), suelo, contacto);
+    await pide("environments/RoomEnvironment.js"); const pm = new THREE.PMREMGenerator(renderer); e.environment = pm.fromScene(new THREE.RoomEnvironment(), .04).texture; pm.dispose();
+    e.background = new THREE.Color(0x070707);
+    BU.escena = e; BU.piv = piv; pf.busto = true; medir(); renderer.compile(e, BU.cam);
+    const lz = renderer.domElement; lz.style.opacity = 0; lz.style.transition = "opacity 1s ease"; requestAnimationFrame(() => requestAnimationFrame(() => { lz.style.opacity = 1; }));
+  }
+  addEventListener("pointermove", e => { if (T.modo === "portada") { BU.raton[0] = e.clientX / innerWidth * 2 - 1; BU.raton[1] = e.clientY / innerHeight * 2 - 1; } }, { passive: true });
+  function frameBusto(dt, now) {
+    const y = portada.scrollTop, mov = Math.abs(y - (BU.y ?? -1)) > .5 || Math.abs(BU.raton[0] - BU.suave[0]) + Math.abs(BU.raton[1] - BU.suave[1]) > .003;
+    if (mov) BU.tMov = now; BU.acum = (BU.acum || 0) + dt;
+    /* En reposo, 30 imágenes por segundo: la pieza gira muy despacio */
+    if (!mov && now - (BU.tMov || 0) > 400 && BU.acum < .031) return;
+    dt = Math.min(.05, BU.acum); BU.acum = 0; BU.y = y;
+    const a = calmo ? 1 : 1 - Math.exp(-dt * 4); BU.suave[0] += (BU.raton[0] - BU.suave[0]) * a; BU.suave[1] += (BU.raton[1] - BU.suave[1]) * a;
+    BU.rot += dt * (calmo ? 0 : .1); const s = y / Math.max(1, portada.clientHeight);
+    BU.piv.rotation.y = -.35 + BU.rot + s * .5 + BU.suave[0] * .22;
+    const lz = renderer.domElement, w = lz.width, h = lz.height, asp = w / Math.max(1, h), ancho = asp > 1.05, cm = BU.cam;
+    cm.aspect = asp; const d = 4.3 / Math.min(1, asp / 1.25) * (ancho ? 1 : 1.05) + Math.min(s, 3) * .12;
+    cm.position.set(BU.suave[0] * .25, 1.0 - BU.suave[1] * .12, d); cm.lookAt(0, .86, 0);
+    if (ancho) cm.setViewOffset(w, h, -w * .2, 0, w, h); else cm.setViewOffset(w, h, 0, h * .2, w, h);
+    const tm = renderer.toneMapping, ex = renderer.toneMappingExposure;
+    renderer.setRenderTarget(null); renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = (ancho ? 1 : .42) * Aj.brillo;
+    renderer.render(BU.escena, cm); renderer.toneMapping = tm; renderer.toneMappingExposure = ex;
+  }
   framePortada = function (dt, now) {
-    if (!pf.modelo) { if (renderer.domElement.style.visibility !== "hidden") renderer.domElement.style.visibility = "hidden"; return; }
-    renderer.domElement.style.visibility = ""; if (pf.listo && pf.escultura) return frameEscultura(dt, now); luces.visible = true; return frameBase(dt, now);
+    const lz = renderer.domElement;
+    if (pf.modelo) { lz.style.visibility = ""; luces.visible = true; return frameBase(dt, now); }
+    if (!BU.escena) { if (lz.style.visibility !== "hidden") lz.style.visibility = "hidden"; return; }
+    if (lz.style.visibility) lz.style.visibility = ""; frameBusto(dt, now);
   };
   montaPortada = async function () {
-    try { pf.listo = true; vista.classList.add("lista"); aplicaAj(); revelaSecciones(); }
-    catch (e) { console.error(e); }
+    pf.listo = true; vista.classList.add("lista"); aplicaAj(); revelaSecciones();
+    try { await montaBusto(); } catch (e) { console.error(e); }
   };
   /* Al salir de la portada vuelven las luces de la escena */
   /* Las secciones aparecen al entrar en pantalla, sin trabajo por fotograma */
@@ -112,7 +160,7 @@
     secs.forEach((s, i) => { if (i) { s.classList.add("revelable"); io.observe(s); } });
   }
   const interfazBase = interfaz; interfaz = function (modo) {
-    renderer.domElement.style.visibility = modo === "portada" && !pf.modelo ? "hidden" : "";
+    renderer.domElement.style.visibility = modo === "portada" && !pf.modelo && !BU.escena ? "hidden" : ""; if (modo !== "portada") BU.cam.clearViewOffset();
     luces.visible = modo !== "portada" || !pf.escultura; const r = interfazBase(modo);
     if (modo !== "portada") { R.dof = 0; const t = R.nivel >= 2 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap; if (renderer.shadowMap.type !== t) { renderer.shadowMap.type = t; renderer.shadowMap.needsUpdate = true; } }
     PQ.w = 0; medir(); return r;
@@ -120,7 +168,7 @@
 
   /* ---------- Modelos de ejemplo hechos con código: materiales con nombre, así toman el realismo ---------- */
   /* Los mismos colores base que la villa (su MTL): así cada material se ve como debe */
-  const KD = { cesped: [.3, .48, .2], pavimento_exterior: [.76, .74, .7], hormigon_claro: [.84, .82, .78], hormigon_pulido: [.6, .6, .58], madera_suelo: [.58, .42, .28], estuco_blanco: [.93, .92, .89], metal_negro: [.07, .07, .08], vidrio: [.6, .7, .74], techo_blanco: [.97, .96, .94], alfombra: [.66, .62, .56], tela_gris: [.52, .5, .48], nogal: [.36, .24, .15], marmol_negro: [.12, .11, .11], tela_acento: [.45, .35, .26], negro_brillo: [.03, .03, .035], lacado_arena: [.82, .76, .67], marmol_blanco: [.95, .94, .92], marmol_crema: [.9, .86, .79], cuero_cognac: [.55, .32, .17], tela_crema: [.93, .9, .84], tela_arena: [.8, .74, .65], porcelanico_gris: [.72, .71, .69], porcelana: [.97, .97, .96], espejo: [.8, .83, .86], luz_calida: [1, .86, .62], piedra_natural: [.74, .68, .6], piedra_oscura: [.4, .38, .36], agua_piscina: [.22, .62, .74], azulejo_piscina: [.3, .66, .76], acero: [.72, .73, .74] };
+  const KD = { cesped: [.3, .48, .2], pavimento_exterior: [.76, .74, .7], hormigon_claro: [.84, .82, .78], hormigon_pulido: [.6, .6, .58], madera_suelo: [.58, .42, .28], estuco_blanco: [.93, .92, .89], metal_negro: [.07, .07, .08], vidrio: [.6, .7, .74], techo_blanco: [.97, .96, .94], alfombra: [.66, .62, .56], tela_gris: [.52, .5, .48], nogal: [.36, .24, .15], marmol_negro: [.12, .11, .11], tela_acento: [.45, .35, .26], negro_brillo: [.03, .03, .035], lacado_arena: [.82, .76, .67], marmol_blanco: [.95, .94, .92], marmol_crema: [.9, .86, .79], cuero_cognac: [.55, .32, .17], tela_crema: [.93, .9, .84], tela_arena: [.8, .74, .65], porcelanico_gris: [.72, .71, .69], porcelana: [.97, .97, .96], espejo: [.8, .83, .86], luz_calida: [1, .86, .62], piedra_natural: [.74, .68, .6], piedra_oscura: [.4, .38, .36], agua_piscina: [.22, .62, .74], azulejo_piscina: [.3, .66, .76], acero: [.72, .73, .74], hoja: [.16, .3, .14], libro_a: [.62, .2, .16], libro_b: [.2, .3, .42], libro_c: [.85, .8, .7] };
   const mn = n => { const c = KD[n] || [.8, .8, .8], m = new THREE.MeshStandardMaterial({ color: new THREE.Color(...c) }); if (n === "luz_calida") m.emissive = new THREE.Color(1, .8, .52); if (n === "vidrio") { m.transparent = true; m.opacity = .22; } m.name = n; return m; };
   function constructor(g) {
     const M = {}, mat = n => M[n] || (M[n] = mn(n));
@@ -161,9 +209,22 @@
     /* Lámparas y terraza */
     [[2.9, 5.6], [6.7, 5.9], [5.7, 2.4], [10.2, 1.6], [3.2, 6.9]].forEach(([x, z]) => B("luz_calida", .5, .03, .5, x - .25, H - .04, z - .25));
     B("tela_crema", 1.8, .38, .8, 2, .02, 10.2); B("nogal", .6, .35, .6, 4.2, .02, 10.3);
+    /* Detalles: rodapiés, estantería con libros, cuadros, cojines, plantas, lámparas y grifería */
+    const M2 = {}, mt = n => M2[n] || (M2[n] = mn(n));
+    const cil = (n, r, h, x, y, z, seg = 16) => { const e = new THREE.Mesh(new THREE.CylinderGeometry(r, r * .92, h, seg), mt(n)); e.position.set(x, y + h / 2, z); e.name = n; g.add(e); return e; };
+    const bola = (n, r, x, y, z) => { const e = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), mt(n)); e.position.set(x, y, z); e.scale.y = .85; e.name = n; g.add(e); return e; };
+    B("nogal", 8, .08, .02, 0, 0, 0); B("nogal", .02, .08, 9, 0, 0, 0); B("nogal", 4, .08, .02, 8, 0, 0); B("nogal", .02, .08, 4.4, 11.98, 0, 0);
+    [.5, 1.0, 1.5, 2.0].forEach((y, k) => { B("nogal", .3, .035, 2.4, .02, y, 1.0); let z = 1.06; while (z < 3.3) { const w = .04 + ((k * 7 + z * 13) % 5) * .012, hb = .2 + ((k * 3 + z * 17) % 4) * .04; B(["libro_a", "libro_b", "libro_c", "tela_arena"][Math.floor(z * 11 + k) % 4], .22, hb, w, .05, y + .035, z); z += w + .006; if (((z * 10) | 0) % 7 === 0) z += .25; } });
+    B("nogal", .04, 1.0, 1.5, .02, 1.3, 4.7); B("tela_acento", .02, .86, 1.36, .05, 1.37, 4.77); B("nogal", 1.3, .8, .04, 9.55, 1.45, .02); B("lacado_arena", 1.18, .68, .02, 9.61, 1.51, .05);
+    [[1.9, 6.72], [2.55, 6.72], [3.4, 6.72]].forEach(([x, z], k) => { const e = B(k === 1 ? "tela_acento" : "tela_crema", .45, .38, .14, x, .45, z + .58); e.rotation.x = -.18; });
+    cil("hormigon_claro", .22, .42, .45, .02, 8.4); bola("hoja", .42, .45, .95, 8.4); bola("hoja", .3, .62, 1.3, 8.3); cil("hormigon_claro", .18, .36, 11.55, .02, 3.95); bola("hoja", .32, 11.55, .78, 3.95);
+    cil("metal_negro", .015, 1.45, 1.15, .02, 7.35, 8); cil("metal_negro", .14, .02, 1.15, .02, 7.35); cil("luz_calida", .17, .26, 1.15, 1.42, 7.35);
+    [5.1, 5.7, 6.3].forEach(x => { cil("metal_negro", .006, 1.0, x, H - 1.0, 2.45, 6); bola("luz_calida", .11, x, H - 1.08, 2.45); });
+    B("negro_brillo", .62, .01, .5, 4.0, .94, .14); cil("metal_negro", .015, .28, 6.0, .94, .3, 8); B("metal_negro", .03, .03, .2, 5.985, 1.2, .3);
+    B("nogal", .45, .45, .4, 8.65, .02, .45); B("nogal", .45, .45, .4, 11.3, .02, .45); cil("luz_calida", .09, .2, 8.87, .47, .65); cil("luz_calida", .09, .2, 11.52, .47, .65);
     g.traverse(o => { if (o.isMesh) { o.castShadow = o.material.name !== "vidrio"; o.receiveShadow = true; } });
     luzEstudio(g, { amb: .5, clave: .7, relleno: .35 });
-    return { g, amb: "Atardecer", estilo: "Oscuro", rooms: [estanciaM("Salón y cocina", 0, 8, 0, 9), estanciaM("Dormitorio", 8, 12, 0, 4.4), estanciaM("Baño", 8, 12, 4.45, 7), estanciaM("Recibidor", 8, 12, 7, 9), estanciaM("Terraza", -1, 13, 9, 12)], nombre: "Loft minimalista" };
+    return { g, amb: "Atardecer", estilo: "Original", rooms: [estanciaM("Salón y cocina", 0, 8, 0, 9), estanciaM("Dormitorio", 8, 12, 0, 4.4), estanciaM("Baño", 8, 12, 4.45, 7), estanciaM("Recibidor", 8, 12, 7, 9), estanciaM("Terraza", -1, 13, 9, 12)], nombre: "Loft minimalista" };
   }
   /* Pabellón de cristal: losa volada sobre pilares finos, muros de piedra y lámina de agua */
   function creaPabellon() {
@@ -205,11 +266,7 @@
     return { g, amb: "Blanco", estilo: "Original", rooms: [estanciaM("Galería", -8, 8, -6, 6)], nombre: "Galería con escultura" };
   }
   const MUESTRAS = [
-    { n: "Villa contemporánea", d: "Dos plantas, piscina y jardín", foto: "villa", f: () => $("muestra").click() },
-    { n: "Loft minimalista", d: "Salón-cocina, dormitorio y baño", foto: "loft", c: creaLoft },
-    { n: "Pabellón de cristal", d: "Losa volada, mármol y lámina de agua", foto: "pabellon", c: creaPabellon },
-    { n: "Superdeportivo", d: "Sala de exposición para rodearlo", foto: "superdeportivo", c: creaShowroom },
-    { n: "Galería con escultura", d: "Una pieza escultórica en el centro", foto: "galeria", c: creaGaleriaArte }
+    { n: "Loft minimalista", d: "Salón-cocina, dormitorio y baño, con todo detalle", foto: "loft", c: creaLoft }
   ];
   async function abreMuestra(mu) {
     $("galeria").hidden = true; cierraPanel();
@@ -218,7 +275,7 @@
     try {
       await estado("Construyendo " + mu.n.toLowerCase()); const r = mu.c(); H.fuentes = null; H.ruta = null;
       /* Los ejemplos se abren en su versión oscura y minimalista: de noche y con las luces encendidas */
-      const k = "pc:datos:" + r.nombre, d0 = guarda.leer(k); if (!d0 || d0.v !== 2) guarda.poner(k, Object.assign({}, d0 || { puntos: [], muebles: [], vistas: [], suelo: "", pared: "" }, { v: 2, amb: r.amb || "Atardecer", estilo: r.estilo || "Oscuro" }));
+      const k = "pc:datos:" + r.nombre, d0 = guarda.leer(k); if (!d0 || d0.v !== 3) guarda.poner(k, Object.assign({}, d0 || { puntos: [], muebles: [], vistas: [], suelo: "", pared: "" }, { v: 3, amb: r.amb || "Atardecer", estilo: r.estilo || "Oscuro" }));
       await instalar(r.g, "glb", r.nombre, { rooms: r.rooms }); ponLuces(true);
     }
     catch (e) { console.error(e); fallo(motivo(e)); }
@@ -229,12 +286,12 @@
     await galeriaBase(); const caja = $("galeria").querySelector(".tarjetas"); if (!caja) return;
     caja.querySelectorAll(".tarjetaG").forEach((b, i) => { if (i === 0) b.remove(); });
     const GR = ["linear-gradient(135deg,#2b3a2e,#0d120e)", "linear-gradient(135deg,#3a332a,#120f0c)", "linear-gradient(135deg,#25313a,#0b0f12)", "linear-gradient(135deg,#3a1414,#120606)", "linear-gradient(135deg,#34322d,#0f0e0c)"];
-    const t = texto("p", "eti"); t.innerHTML = "<b>00</b>Modelos de ejemplo"; t.style.gridColumn = "1 / -1"; caja.prepend(t);
+    const t = texto("p", "eti"); t.innerHTML = "<b>00</b>Modelo de ejemplo"; t.style.gridColumn = "1 / -1"; caja.prepend(t);
     MUESTRAS.slice().reverse().forEach((mu, k) => { const i = MUESTRAS.length - 1 - k, b = texto("button", "tarjetaG"); b.type = "button"; b.innerHTML = `<span class="img" style="background:${GR[i]}"><img src="muestras/${mu.foto}.jpg" alt="" loading="lazy" decoding="async" onerror="this.remove()"><span class="num">${String(i + 1).padStart(2, "0")}</span></span><span class="info"><b></b><small></small></span>`; b.querySelector("b").textContent = mu.n; b.querySelector("small").textContent = mu.d; b.onclick = () => abreMuestra(mu); t.after(b); });
   };
   /* Explorar: los modelos de ejemplo a mano */
   BOTONES.vista = function (p) {
-    titulo(p, "Modelos de ejemplo");
+    titulo(p, "Modelo de ejemplo");
     MUESTRAS.forEach((mu, i) => { const b = texto("button", "linea"); b.type = "button"; b.innerHTML = `${ico(["casa", "sofa", "techo", "flecha", "chispa"][i])}<div><span></span><small></small></div>`; b.querySelector("span").textContent = mu.n; b.querySelector("small").textContent = mu.d; b.onclick = () => abreMuestra(mu); p.append(b); });
     const g = texto("button", "linea"); g.type = "button"; g.innerHTML = ico("galeria") + "<div>Galería de proyectos<small>Casas publicadas para recorrer</small></div>"; g.onclick = galeria; p.append(g);
   };
@@ -243,3 +300,5 @@
   addEventListener("resize", () => { pf.offs = null; }, { passive: true });
   if (document.fonts) document.fonts.ready.then(() => { pf.offs = null; });
   setTimeout(() => { pf.offs = null; }, 2500);
+  /* El botón principal abre el loft de ejemplo (generado al momento, 0 KB de descarga) */
+  { const b = $("muestra"), n = b.cloneNode(true); b.replaceWith(n); n.onclick = () => abreMuestra(MUESTRAS[0]); }

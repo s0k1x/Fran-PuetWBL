@@ -147,7 +147,7 @@
     s.querySelector(".x").onclick = () => { s.hidden = true; s.textContent = ""; };
     const caja = s.querySelector(".tarjetas"), tarjeta = (img, nombre, fecha, f) => { const b = texto("button", "tarjetaG"); b.type = "button"; b.innerHTML = `<span class="img">${img ? `<img alt="" loading="lazy">` : ""}</span><span class="info"><b></b><small></small></span>`; if (img) b.querySelector("img").src = img; b.querySelector("b").textContent = nombre; b.querySelector("small").textContent = fecha; b.onclick = f; caja.append(b); };
     let foto = null; try { if (T.modo === "portada" && pf.listo) foto = vistaPortada(); } catch (e) {}
-    tarjeta(foto, "Villa de ejemplo", "Recorrido de muestra", () => { s.hidden = true; $("muestra").click(); });
+    tarjeta(foto, "Loft de ejemplo", "Recorrido de muestra", () => { s.hidden = true; $("muestra").click(); });
     if (!nube) return;
     const { data, error } = await nube.from("proyectos").select("nombre,slug,miniatura,actualizado").eq("publico", true).eq("en_galeria", true).order("actualizado", { ascending: false }).limit(30);
     if (error) { caja.insertAdjacentHTML("beforeend", '<p class="nota2">No se ha podido cargar la galería.</p>'); return; }
