@@ -70,6 +70,11 @@
   }
   const S_ESC = { s: 0, rot: 0 };
   function frameEscultura(dt, now) {
+    /* En reposo basta con 30 imágenes por segundo: la pieza gira despacio y el equipo queda libre para el scroll */
+    const mov = pf.play || Math.abs(portada.scrollTop - (pf.yUlt ?? -1)) > .5 || Math.abs(destinoScroll() - pf.s) > .003;
+    if (mov) pf.tMov = now; pf.acum = (pf.acum || 0) + dt;
+    if (!mov && R.nivel < 2 && now - (pf.tMov || 0) > 500 && pf.acum < .031) return;
+    dt = Math.min(.05, pf.acum); pf.acum = 0;
     raiz.visible = false; capa.visible = false; escaparate.visible = true; luces.visible = false;
     if (pf.play) { portada.scrollTop += dt * portada.clientHeight * .16 * Aj.velRec; if (portada.scrollTop + portada.clientHeight >= portada.scrollHeight - 2) paraRecorrido(); }
     pf.s += (destinoScroll() - pf.s) * (calmo ? 1 : 1 - Math.exp(-dt * 4));
@@ -82,10 +87,10 @@
     S_ESC.rot += dt * (calmo ? 0 : .22); e.esc.rotation.y = S_ESC.rot; e.esc.position.y = 1.62 + (calmo ? 0 : Math.sin(now * .0009) * .06); e.esc.rotation.z = calmo ? 0 : Math.sin(now * .0005) * .05; e.anillo.rotation.set(Math.PI / 2 + Math.sin(now * .0004) * .35, 0, now * .00025); e.anillo.position.y = 1.62 + Math.sin(now * .0007) * .05;
     T.clip = 1000; corte.constant = 1000; renderer.toneMappingExposure = Aj.brillo; R.abObj = 0;
     /* Plano cinematográfico: enfoque en la escultura y fondo suavemente desenfocado */
-    R.dof = calmo ? 0 : .3; R.foco = camera.position.distanceTo(pf.centro);
+    R.dof = calmo || R.nivel < 1 ? 0 : .3; R.foco = camera.position.distanceTo(pf.centro);
 
     const alto = portada.clientHeight;
-    if (Math.abs(portada.scrollTop - (pf.yUlt ?? -1)) > .5) { pf.yUlt = portada.scrollTop; secs.forEach(s => { const x = s.firstElementChild, r = s.getBoundingClientRect(), dd = Math.abs(r.top + r.height / 2 - alto / 2) / alto, o = Math.max(0, Math.min(1, 1.5 - dd * 2.1)); x.style.opacity = s === secs[0] ? Math.max(.25, o) : o; x.style.transform = `translateY(${(1 - o) * 26}px)`; }); }
+    if (Math.abs(portada.scrollTop - (pf.yUlt ?? -1)) > .5) { pf.yUlt = portada.scrollTop; if (!pf.offs || pf.offsAlto !== alto) { pf.offsAlto = alto; pf.offs = secs.map(s => [s.offsetTop, s.offsetHeight]); } secs.forEach((s, k) => { const x = s.firstElementChild, r = { top: pf.offs[k][0] - portada.scrollTop, height: pf.offs[k][1] }, dd = Math.abs(r.top + r.height / 2 - alto / 2) / alto, o = Math.max(0, Math.min(1, 1.5 - dd * 2.1)); x.style.opacity = s === secs[0] ? Math.max(.25, o) : o; x.style.transform = `translateY(${(1 - o) * 26}px)`; }); }
     $("etiP").hidden = true; usarReal("portada"); vigilaRitmo(dt); R.sucio = true; pintar(false);
     if (pf.foto) { pf.foto = false; vista.toBlob(b => guardar(b, "portada.png"), "image/png"); }
   }
@@ -224,3 +229,7 @@
     const rc = texto("button", "linea"); rc.type = "button"; rc.innerHTML = ico("reproducir") + "<div>Recorrido automático<small>La portada avanza sola</small></div>"; rc.onclick = () => { cierraPanel(); pf.play = !pf.play; }; p.append(rc);
   };
   $("verMuestras").onclick = galeria;
+  /* Las posiciones de las secciones se recalculan solo cuando cambia el diseño */
+  addEventListener("resize", () => { pf.offs = null; }, { passive: true });
+  if (document.fonts) document.fonts.ready.then(() => { pf.offs = null; });
+  setTimeout(() => { pf.offs = null; }, 2500);
