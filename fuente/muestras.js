@@ -10,7 +10,7 @@
   ];
   function geoEscultura() {
     /* Tubo más grueso en el centro y afilado en los extremos, como una pieza tallada; mucho detalle en ordenador */
-    const S = tactil ? 640 : 1400, Rr = tactil ? 22 : 40, gs = FORMAS.map(f => {
+    const S = tactil ? 520 : 900, Rr = tactil ? 18 : 28, gs = FORMAS.map(f => {
       const c = new CurvaF(f), g = new THREE.TubeGeometry(c, S, .12, Rr, false), p = g.attributes.position, v = new THREE.Vector3(), q = new THREE.Vector3();
       for (let i = 0; i <= S; i++) { const u = i / S, k = .22 + .78 * Math.pow(Math.sin(Math.PI * u), .55); c.getPointAt(u, q); for (let j = 0; j <= Rr; j++) { const n = i * (Rr + 1) + j; v.fromBufferAttribute(p, n).sub(q).multiplyScalar(k).add(q); p.setXYZ(n, v.x, v.y, v.z); } }
       return g;
@@ -45,17 +45,20 @@
   ];
   function montaEscultura() {
     escaparate.clear(); const g = new THREE.Group();
-    const m = matEscultura(), esc = new THREE.Mesh(geoEscultura(), m); esc.position.y = 1.62; esc.castShadow = true; esc.morphTargetInfluences = [0, 0]; g.add(esc);
+    const m = matEscultura(), esc = new THREE.Mesh(geoEscultura(), m); esc.position.y = 1.62; esc.castShadow = false; esc.morphTargetInfluences = [0, 0]; g.add(esc);
+    /* Sombra de contacto pintada: un degradado bajo la pieza, sin calcular sombras cada fotograma */
+    const cs = document.createElement("canvas"); cs.width = cs.height = 256; const cg = cs.getContext("2d"), gr = cg.createRadialGradient(128, 128, 0, 128, 128, 128); gr.addColorStop(0, "rgba(0,0,0,.85)"); gr.addColorStop(.45, "rgba(0,0,0,.45)"); gr.addColorStop(1, "rgba(0,0,0,0)"); cg.fillStyle = gr; cg.fillRect(0, 0, 256, 256);
+    const sombra = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 2.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cs), transparent: true, depthWrite: false, toneMapped: false })); sombra.rotation.x = -Math.PI / 2; sombra.position.y = .004; g.add(sombra);
     /* Sin peana: la pieza flota sobre el suelo del estudio */
     /* Suelo de estudio infinito: pulido y que se funde en la oscuridad */
     const suelo = new THREE.Mesh(new THREE.CircleGeometry(40, 64), new THREE.MeshStandardMaterial({ color: 0x030303, roughness: .82, metalness: 0, envMapIntensity: 0 }));
-    suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true;
+    suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = false;
     suelo.material.onBeforeCompile = sh => { sh.vertexShader = "varying vec2 vP;\n" + sh.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvP = position.xy;"); sh.fragmentShader = "varying vec2 vP;\n" + sh.fragmentShader.replace("#include <dithering_fragment>", "#include <dithering_fragment>\ngl_FragColor.rgb *= 1. - smoothstep(1.2, 6.5, length(vP));"); };
     g.add(suelo);
     /* Anillo dorado que orbita */
     const anillo = new THREE.Mesh(new THREE.TorusGeometry(1.25, .012, 10, 160), new THREE.MeshStandardMaterial({ color: 0xd8c49c, metalness: 1, roughness: .2 })); anillo.position.y = 1.62; g.add(anillo);
     /* Luces de estudio: clave con sombra suave, contraluz cálido y relleno frío */
-    const clave = new THREE.DirectionalLight(0xfff4e6, .7); clave.position.set(2.5, 7, 2.5); clave.castShadow = true; clave.shadow.mapSize.set(1024, 1024); Object.assign(clave.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: .5, far: 15 }); clave.shadow.bias = -.0004; clave.shadow.normalBias = .02;
+    const clave = new THREE.DirectionalLight(0xfff4e6, .7); clave.position.set(2.5, 7, 2.5); clave.castShadow = false; clave.shadow.mapSize.set(1024, 1024); Object.assign(clave.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: .5, far: 15 }); clave.shadow.bias = -.0004; clave.shadow.normalBias = .02;
     /* Contraluces que recortan la silueta sobre el negro: uno cálido y otro frío */
     const contra = new THREE.DirectionalLight(0xffc98a, 3.2); contra.position.set(-4, 3, -4);
     const contra2 = new THREE.DirectionalLight(0xbcd0ff, 2.4); contra2.position.set(4.5, 2.2, -3.5);
@@ -80,8 +83,7 @@
     T.clip = 1000; corte.constant = 1000; renderer.toneMappingExposure = Aj.brillo; R.abObj = 0;
     /* Plano cinematográfico: enfoque en la escultura y fondo suavemente desenfocado */
     R.dof = calmo ? 0 : .3; R.foco = camera.position.distanceTo(pf.centro);
-    if (renderer.shadowMap.type !== THREE.PCFSoftShadowMap) { renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.shadowMap.needsUpdate = true; }
-    if (!pf.sombraT || now - pf.sombraT > 120) { pf.sombraT = now; renderer.shadowMap.needsUpdate = true; }
+
     const alto = portada.clientHeight;
     if (Math.abs(portada.scrollTop - (pf.yUlt ?? -1)) > .5) { pf.yUlt = portada.scrollTop; secs.forEach(s => { const x = s.firstElementChild, r = s.getBoundingClientRect(), dd = Math.abs(r.top + r.height / 2 - alto / 2) / alto, o = Math.max(0, Math.min(1, 1.5 - dd * 2.1)); x.style.opacity = s === secs[0] ? Math.max(.25, o) : o; x.style.transform = `translateY(${(1 - o) * 26}px)`; }); }
     $("etiP").hidden = true; usarReal("portada"); vigilaRitmo(dt); R.sucio = true; pintar(false);

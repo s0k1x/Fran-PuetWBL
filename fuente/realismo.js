@@ -377,7 +377,7 @@
       if (uDof > 0.) {
         float d = texture2D(tProf, vUv).x, z = uCam.x * uCam.y / (uCam.y - d * (uCam.y - uCam.x));
         float coc = clamp(abs(z - uFoco) / max(uFoco, .8) * 1.4, 0., 1.) * uDof;
-        if (coc > .02) { vec3 s = c; for (int i = 0; i < 20; i++) { float a = float(i) * 2.39996, r = sqrt((float(i) + .5) / 20.); s += texture2D(tHDR, vUv + vec2(cos(a), sin(a)) * r * coc * uPx * 16.).rgb; } c = s / 21.; }
+        if (coc > .02) { vec3 s = c; for (int i = 0; i < 12; i++) { float a = float(i) * 2.39996, r = sqrt((float(i) + .5) / 12.); s += texture2D(tHDR, vUv + vec2(cos(a), sin(a)) * r * coc * uPx * 16.).rgb; } c = s / 13.; }
       }
       /* Nitidez: realce suave de bordes sobre la imagen ya en tono final */
       vec3 vec = texture2D(tHDR, vUv + vec2(uPx.x, 0.)).rgb + texture2D(tHDR, vUv - vec2(uPx.x, 0.)).rgb + texture2D(tHDR, vUv + vec2(0., uPx.y)).rgb + texture2D(tHDR, vUv - vec2(0., uPx.y)).rgb;
@@ -509,7 +509,7 @@
     tamPost();
     if (renderer.toneMapping !== THREE.NoToneMapping) renderer.toneMapping = THREE.NoToneMapping;
     renderer.setRenderTarget(PQ.hdr); renderer.render(scene, camera);
-    const ao = R.nivel >= 2 || heroe();
+    const ao = R.nivel >= 2 && !heroe();
     /* Si la cámara no se ha movido, la oclusión del fotograma anterior sigue valiendo: no se repite */
     const me = camera.matrixWorld.elements, fa = PQ.firmaAO || (PQ.firmaAO = new Float64Array(18)); let quieta = !R.aoSucio;
     for (let i = 0; i < 16; i++) if (fa[i] !== me[i]) { quieta = false; fa[i] = me[i]; }

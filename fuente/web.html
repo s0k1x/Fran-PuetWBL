@@ -1003,7 +1003,7 @@ const CONFIG = { accesoObligatorio: false, modelUrl: null, modeloPortada: null, 
     const w = $("vista").clientWidth, h = $("vista").clientHeight;
     /* Presupuesto de píxeles: en monitores grandes no se dibuja a más de unos 3,7 millones de píxeles (≈ 2560 × 1440);
        la nitidez final la recupera el realce del posproceso. Por encima de eso solo se gasta memoria y se pierde fluidez */
-    const pr = Aj.calidad || (T.modo === "portada" && pf && pf.escultura ? 2 : tactil ? 2 : 1.5), presu = (T.modo === "portada" && pf && pf.escultura ? 4.2e6 : R && R.modoRend ? 1.3e6 : tactil ? 2.2e6 : !R || R.nivel >= 2 ? 3.7e6 : R.nivel === 1 ? 2.6e6 : 1.9e6), tope = Math.sqrt(presu / Math.max(1, w * h));
+    const pr = Aj.calidad || (T.modo === "portada" && pf && pf.escultura ? 2 : tactil ? 2 : 1.5), presu = (T.modo === "portada" && pf && pf.escultura ? (tactil ? 2.2e6 : 3e6) : R && R.modoRend ? 1.3e6 : tactil ? 2.2e6 : !R || R.nivel >= 2 ? 3.7e6 : R.nivel === 1 ? 2.6e6 : 1.9e6), tope = Math.sqrt(presu / Math.max(1, w * h));
     renderer.setPixelRatio(Math.max(.5, Math.min(devicePixelRatio || 1, pr, Aj.calidad ? 9 : tope)) * (R ? R.escala : 1)); renderer.setSize(w, h, false);
     camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
   }
