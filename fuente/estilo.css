@@ -617,3 +617,54 @@ html.claro #barraP.solida { background: rgba(248, 247, 243, .94); }
 #verMuestras:hover { color: #fff; }
 #verMuestras::after { content: "→"; opacity: 0; transform: translateX(-4px); transition: all .3s var(--curva); }
 #verMuestras:hover::after { opacity: 1; transform: none; }
+
+/* ==========================================================================
+   Minimalismo 2: menos elementos, más aire, tipografía más fina
+   ========================================================================== */
+:root { --negro: #000; }
+body, #app, #cargador { background: #000; }
+#barraP { padding-top: calc(18px + env(safe-area-inset-top, 0px)); padding-bottom: 18px; }
+#barraP nav { background: transparent; box-shadow: none; gap: 6px; }
+#barraP nav button { font-size: 13px; padding: 8px 14px; color: #a9a8a2; }
+#barraP .icono { width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center; color: var(--gris2); transition: color .2s, background .2s; }
+#barraP .icono:hover, #barraP .icono[aria-expanded="true"] { color: #fff; background: var(--hover); }
+#barraP .icono svg { width: 17px; height: 17px; }
+#barraP.solida { box-shadow: none; border-bottom: 1px solid rgba(255, 255, 255, .06); }
+.fantasma { box-shadow: none; color: var(--gris2); }
+.fantasma:hover { box-shadow: none; color: #fff; }
+/* Portada: titulares finos, cifras discretas, solo dos enlaces secundarios */
+#portada h1 { font-weight: 400; letter-spacing: -.055em; font-size: clamp(48px, 6.8vw, 104px); }
+#portada h2 { font-weight: 400; letter-spacing: -.05em; }
+.txt { gap: 22px; }
+.txt p { color: #a9a8a2; font-size: 16px; max-width: 42ch; }
+.pildora { background: transparent; box-shadow: none; padding-left: 0; color: var(--gris); }
+.pildora i { background: transparent; color: var(--acento); padding: 0; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; font-size: 10px; }
+.cifras { border-top: 0; padding-top: 4px; gap: 18px 54px; }
+.cifras b { font-weight: 300; font-size: clamp(24px, 2.2vw, 32px); }
+.cifras span { color: #6f6e69; }
+#bUnir, #bCuenta { display: none !important; }
+.secund { gap: 8px 28px; }
+#sombraP { background: radial-gradient(110% 90% at 0% 55%, rgba(0, 0, 0, .78), rgba(0, 0, 0, .25) 40%, transparent 60%); }
+#indice button i { background: rgba(255, 255, 255, .22); }
+#indice button span { color: #6f6e69; }
+.eti { color: #8d8c86; }
+.eti::before { opacity: .4; }
+#portada h1 em, #portada h2 em { color: #e2d3b2; }
+/* Dock: solo iconos, con el nombre al pasar */
+#dock .tool span { display: none; }
+#dock .tool { width: 42px; height: 42px; padding: 0; justify-content: center; border-radius: 12px; }
+#dock .tool svg.i { width: 18px; height: 18px; }
+#dock { gap: 2px; }
+[data-tip] { position: relative; }
+[data-tip]:hover::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%); padding: 6px 10px; border-radius: 8px; background: #f2f1ec; color: #000; font-size: 11px; white-space: nowrap; pointer-events: none; animation: entra .25s var(--curva); }
+#esq { background: transparent; box-shadow: none; padding-left: 4px; }
+#etiPlanta { background: transparent; box-shadow: none; padding-left: 4px; color: #6f6e69; }
+#mini { box-shadow: none; border: 1px solid rgba(255, 255, 255, .06); background: rgba(0, 0, 0, .55); }
+/* Paneles: más aire y menos bordes */
+#panelP { padding: 22px; gap: 18px; box-shadow: var(--sombra); border: 1px solid rgba(255, 255, 255, .06); }
+.rejilla .tool { box-shadow: none; background: rgba(255, 255, 255, .03); }
+.linea { padding: 12px; }
+#ficha, #hoja { box-shadow: var(--sombra); border: 1px solid rgba(255, 255, 255, .06); }
+html.claro #barraP.solida { border-bottom-color: rgba(0, 0, 0, .06); }
+html.claro .cifras span, html.claro #etiPlanta { color: #8b8a84; }
+@media (max-width: 960px) { #barraP .icono { display: none; } }

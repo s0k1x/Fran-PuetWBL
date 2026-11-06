@@ -234,9 +234,10 @@ input[type="range"] { accent-color: var(--texto); }
     <header id="barraP">
       <a id="marca" href="./" data-i="logo" aria-label="INNRA3D, inicio"><span class="pal">INNRA<b>3D</b></span></a>
       <nav aria-label="Principal">
-        <button type="button" data-p="vista" aria-expanded="false">Explorar<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="amb" aria-expanded="false">Ambiente<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="rec" aria-expanded="false">Recorrido</button><button type="button" data-p="herr" aria-expanded="false">Herramientas<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="ia" aria-expanded="false"><i class="punto-ia"></i>IA</button><button type="button" data-p="aju" aria-expanded="false">Ajustes</button>
+        <button type="button" data-p="vista" aria-expanded="false">Modelos<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="amb" aria-expanded="false">Ambiente<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="herr" aria-expanded="false">Herramientas<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="ia" aria-expanded="false"><i class="punto-ia"></i>IA</button>
       </nav>
       <div class="acc">
+        <button type="button" class="icono" data-p="aju" aria-expanded="false" aria-label="Ajustes" title="Ajustes" data-i="ajustes"></button>
         <button type="button" id="bpCuenta" class="fantasma" data-i="usuario"><span class="txtC">Iniciar sesión</span></button>
         <label class="azul" for="archivo" data-i="subir">Cargar escaneo</label>
         <button type="button" id="bMenu" aria-label="Abrir menú" aria-expanded="false" data-i="menu"></button>
@@ -392,10 +393,10 @@ input[type="range"] { accent-color: var(--texto); }
     </div>
     <span class="sep"></span>
     <div id="herr">
-      <button id="bLuz" class="tool" type="button" aria-pressed="false" data-i="bombilla" hidden><span>Luces</span></button>
-      <button id="bPla" class="tool" type="button" aria-pressed="false" data-i="plano"><span>Plano</span></button>
-      <button id="bMaq" class="tool" type="button" aria-pressed="false" data-i="maqueta"><span>Maqueta</span></button>
-      <button id="bHer" class="tool" type="button" aria-label="Herramientas" data-i="rejilla"><span>Herramientas</span></button><button id="bAju" class="tool" type="button" aria-pressed="false" hidden>Ajustes</button>
+      <button id="bLuz" class="tool" type="button" aria-pressed="false" data-i="bombilla" data-tip="Luces" hidden><span>Luces</span></button>
+      <button id="bPla" class="tool" type="button" aria-pressed="false" data-i="plano" data-tip="Plano · P"><span>Plano</span></button>
+      <button id="bMaq" class="tool" type="button" aria-pressed="false" data-i="maqueta" data-tip="Maqueta · M"><span>Maqueta</span></button>
+      <button id="bHer" class="tool" type="button" aria-label="Herramientas" data-i="rejilla" data-tip="Herramientas · K"><span>Herramientas</span></button><button id="bAju" class="tool" type="button" aria-pressed="false" hidden>Ajustes</button>
     </div>
   </nav>
   <div id="aviso" role="status" hidden></div>
@@ -1002,7 +1003,7 @@ const CONFIG = { accesoObligatorio: false, modelUrl: null, modeloPortada: null, 
     const w = $("vista").clientWidth, h = $("vista").clientHeight;
     /* Presupuesto de píxeles: en monitores grandes no se dibuja a más de unos 3,7 millones de píxeles (≈ 2560 × 1440);
        la nitidez final la recupera el realce del posproceso. Por encima de eso solo se gasta memoria y se pierde fluidez */
-    const pr = Aj.calidad || (T.modo === "portada" && pf && pf.escultura ? 2 : tactil ? 2 : 1.5), presu = (T.modo === "portada" && pf && pf.escultura ? 8.3e6 : R && R.modoRend ? 1.3e6 : tactil ? 2.2e6 : !R || R.nivel >= 2 ? 3.7e6 : R.nivel === 1 ? 2.6e6 : 1.9e6), tope = Math.sqrt(presu / Math.max(1, w * h));
+    const pr = Aj.calidad || (T.modo === "portada" && pf && pf.escultura ? 2 : tactil ? 2 : 1.5), presu = (T.modo === "portada" && pf && pf.escultura ? 4.2e6 : R && R.modoRend ? 1.3e6 : tactil ? 2.2e6 : !R || R.nivel >= 2 ? 3.7e6 : R.nivel === 1 ? 2.6e6 : 1.9e6), tope = Math.sqrt(presu / Math.max(1, w * h));
     renderer.setPixelRatio(Math.max(.5, Math.min(devicePixelRatio || 1, pr, Aj.calidad ? 9 : tope)) * (R ? R.escala : 1)); renderer.setSize(w, h, false);
     camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
   }

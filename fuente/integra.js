@@ -6,7 +6,7 @@
     grafico: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>', pincel: '<path d="M18.4 2.6a2 2 0 0 1 2.9 2.9L11 15.8 8.2 13z"/><path d="M8 14c-2.5 0-4 1.6-4 4 0 1-.6 2-1.5 2.5C4 21 6 21 7.5 20.2 9.4 19.2 10 17.4 10 16z"/>'
   });
   /* Botón de voz en el dock */
-  $("bLuz").insertAdjacentHTML("beforebegin", `<button id="bVoz" class="tool" type="button" aria-pressed="false" aria-label="Hablar con la IA">${ico("micro")}<span>Voz</span></button>`);
+  $("bLuz").insertAdjacentHTML("beforebegin", `<button id="bVoz" class="tool" type="button" aria-pressed="false" aria-label="Hablar con la IA" data-tip="Voz · V">${ico("micro")}<span>Voz</span></button>`);
   $("bVoz").onclick = escucha;
   addEventListener("keydown", e => { if (e.code === "KeyV" && T.modo === "andar" && !/^(text|textarea|search|password)$/.test(e.target.type) && !e.repeat) escucha(); });
 
