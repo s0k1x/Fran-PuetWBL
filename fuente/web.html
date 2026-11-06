@@ -450,7 +450,7 @@ const CONFIG = { accesoObligatorio: false, modelUrl: null, modeloPortada: "model
   /* Luz real para modelos sin textura de escaneo: de día, al atardecer o de noche con sus propias lámparas */
   const LUCES = { Natural: { c: 0xfff1de, i: 2.2, h: .6, e: .8, d: [-.55, .75, .5], cielo: 0xcfe3f1 }, Amanecer: { c: 0xffd6ad, i: 1.7, h: .45, e: .6, d: [.8, .35, .5], cielo: 0xf3d9c4 }, Atardecer: { c: 0xffa566, i: 2, h: .3, e: .4, d: [-.85, .22, .4], cielo: 0xe9a36f }, Noche: { c: 0x8fa8d8, i: .25, h: .08, e: .12, d: [-.3, .8, .5], cielo: 0x0a0f1c }, Blanco: { c: 0xffffff, i: 1.4, h: 1, e: 1, d: [-.5, .8, .4], cielo: 0xf2f2f0 } };
   function solEn(caja, n) { const L = LUCES[n] || LUCES.Natural, c = caja.getCenter(new THREE.Vector3()), R = caja.getSize(new THREE.Vector3()).length() * .55; sol.target.position.copy(c); sol.position.copy(c).addScaledVector(new THREE.Vector3(...L.d).normalize(), R * 1.6); Object.assign(sol.shadow.camera, { left: -R, right: R, top: R, bottom: -R, near: 1, far: R * 3.4 }); sol.shadow.camera.updateProjectionMatrix(); sol.color.setHex(L.c); sol.intensity = L.i; hemi.intensity = RL.activo ? L.h * .35 : L.h; sol.shadow.bias = -.0002; sol.shadow.normalBias = Math.max(.04, R * 2 / sol.shadow.mapSize.x * 2.2); renderer.shadowMap.needsUpdate = true; ambienteReal(n in LUCES ? n : "Natural", new THREE.Vector3(...L.d)); return L; }
-  function pasaEnv(grupo, v) { grupo.traverse(o => { if (o.isMesh) [].concat(o.material).forEach(m => { if (m && m.isMeshStandardMaterial) { if (m.userData.real) { const C = CIELOS[R.ambiente] || CIELOS.Natural; m.envMapIntensity = (m.userData.real.tipo === "vidrio" ? 1.3 : 1) * C.env; if (m.userData.luz) m.emissiveIntensity = m.userData.luz; return; } m.envMapIntensity = v; if (m.emissive && m.emissive.getHex()) m.emissiveIntensity = v < .2 ? 2.4 : 1; m.needsUpdate = false; } }); }); }
+  function pasaEnv(grupo, v) { grupo.traverse(o => { if (o.isMesh) [].concat(o.material).forEach(m => { if (m && m.isMeshStandardMaterial) { if (m.userData.real) { const C = CIELOS[R.ambiente] || CIELOS.Natural; m.envMapIntensity = (m.userData.real.tipo === "vidrio" ? 1.3 : 1) * C.env * (R.nivel === 0 ? .5 : 1); if (m.userData.luz) m.emissiveIntensity = m.userData.luz; return; } m.envMapIntensity = v; if (m.emissive && m.emissive.getHex()) m.emissiveIntensity = v < .2 ? 2.4 : 1; m.needsUpdate = false; } }); }); }
 
   /* ---------- Cargador universal ---------- */
   const BASE = "https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/";
@@ -1212,6 +1212,10 @@ const CONFIG = { accesoObligatorio: false, modelUrl: null, modeloPortada: "model
   });
   $("muestra").addEventListener("click", async () => {
     ocupado(true);
+    /* Si la portada ya tiene cargada la misma villa, se reutiliza: ni descarga ni lectura ni optimización otra vez */
+    if (CONFIG.modeloPrueba && CONFIG.modeloPrueba === CONFIG.modeloPortada && pf.modelo && pf.rooms) {
+      try { await estado("Preparando la villa"); const g = pf.modelo.clone(true); g.traverse(o => { if (o.isMesh && /^(CUB|PA)_/.test(o.name)) { o.position.y = 0; o.visible = true; } }); H.fuentes = null; H.ruta = CONFIG.modeloPrueba; await instalar(g, "glb", pf.nombreModelo || "villa_lujo", { rooms: pf.rooms }); return; } catch (e) { console.warn("Reutilizar la portada falló", e); }
+    }
     if (CONFIG.modeloPrueba) { try { const q = await fetch(CONFIG.modeloPrueba); if (!q.ok) throw new Error("No se ha encontrado el modelo de prueba."); await cargar([new File([await q.arrayBuffer()], CONFIG.modeloPrueba.split("/").pop())]); } catch (e) { fallo(motivo(e)); } return; }
     try {
       await estado("Preparando la casa");

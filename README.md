@@ -67,6 +67,13 @@ La web ya apunta al proyecto de Supabase. Las claves de `CONFIG` son públicas p
 
 Nunca pongas en el código la clave de Gemini ni la clave `service_role` de Supabase.
 
+## Carga rápida
+
+- La web arranca siempre en **Básica**; la calidad se sube en Ajustes, en «Efectos de luz».
+- En Básica no se descargan cielos HDR (la luz sale del cielo horneado) ni mapas de relieve y rugosidad.
+- La villa va en **GLB binario cuantizado** (`KHR_mesh_quantization`, sin UV): 410 KB frente a los 877 KB del OBJ. Para convertir otro modelo: `python3 fuente/obj2glb.py modelo.obj modelo.mtl salida.glb` y mételo en un ZIP con su `estancias.json`.
+- Al pulsar «Recorrer la villa» se reutiliza el modelo de la portada, sin descargarlo ni procesarlo otra vez.
+
 ## Estudio, IA y herramientas nuevas
 
 - **Hora del día** (Ambiente o Herramientas): el sol se mueve, el cielo cambia y las lámparas se encienden al anochecer.

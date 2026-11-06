@@ -3,6 +3,7 @@
      por fotograma. Aquí se juntan las que comparten material (y capa: cubierta, planta alta o resto),
      así se dibuja lo mismo con unas setenta llamadas. Los coches se reconocen por la pintura. */
   function optimizaModelo(grupo) {
+    if (grupo.userData.optimizado) return []; grupo.userData.optimizado = true;
     grupo.updateMatrixWorld(true);
     const inv = new THREE.Matrix4().copy(grupo.matrixWorld).invert(), piezas = [], viejos = [];
     grupo.traverse(o => {

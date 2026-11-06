@@ -92,7 +92,7 @@
     t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); if (srgb) t.encoding = THREE.sRGBEncoding;
     R.tex.set(k, t); return t;
   }
-  const esperaReal = (max = 9000) => new Promise(ok => { const t0 = performance.now(), mira = () => (R.pend <= 0 || performance.now() - t0 > max) ? ok() : setTimeout(mira, 60); mira(); });
+  const esperaReal = (max = 2500) => new Promise(ok => { const t0 = performance.now(), mira = () => (R.pend <= 0 || performance.now() - t0 > max) ? ok() : setTimeout(mira, 60); mira(); });
   const U_R = { uT: { value: 0 }, uMask: { value: null }, uMaskBox: { value: new THREE.Vector4(0, 0, 0, 0) }, uNiv: { value: new THREE.Vector2(3.75, 7.4) }, uEnvIn: { value: .82 }, uCaus: { value: .6 }, uNoche: { value: 0 }, uLuz: { value: 1 }, uRelleno: { value: new THREE.Vector3() } };
 
   /* Fragmentos de shader comunes */
@@ -120,9 +120,12 @@
     }`;
   function inyecta(m, d, op = {}) {
     const un = { uEsc: { value: new THREE.Vector2(d.e || 1, (d.e || 1) * (d.t === "madera" ? .5 : 1)) }, uNs: { value: d.n ?? 1 }, uRM: { value: 1 / ({ hormigon: .829, madera: .363, marmol: .086 }[d.t] || .5) }, uMedia: { value: new THREE.Vector3(1, 1, 1) },
-      tC: { value: d.t ? cargaTex(d.t + "_c", true) : null }, tN: { value: d.t && d.n !== 0 ? cargaTex((d.tn || d.t.replace("_negro", "")) + "_n") : (op.tN || null) }, tR: { value: d.rug ? cargaTex(d.t + "_r") : null } };
-    if (op.tN) un.tN.value = op.tN;
-    const def = []; if (un.tC.value) def.push("B_COL"); if (un.tN.value) def.push("B_NOR"); if (un.tR.value) def.push("B_RUG"); if (op.agua) def.push("B_AGUA"); if (d.caus) def.push("B_CAUS"); if (op.vidrio) def.push("B_VIDRIO"); if (d.luz) def.push("B_LUZ");
+      tC: { value: d.t ? cargaTex(d.t + "_c", true) : null }, tN: { value: null }, tR: { value: null } };
+    /* Relieve y rugosidad solo se descargan cuando el nivel los usa (Alta o Ultra); el agua siempre lleva su relieve */
+    const nN = d.t && d.n !== 0 ? (d.tn || d.t.replace("_negro", "")) + "_n" : null, nR = d.rug ? d.t + "_r" : null;
+    m.userData.mapas = () => { if (nN && !un.tN.value) un.tN.value = cargaTex(nN); if (nR && !un.tR.value) un.tR.value = cargaTex(nR); };
+    if (op.tN) un.tN.value = op.tN; else if (R.nivel > 0) m.userData.mapas();
+    const def = []; if (un.tC.value) def.push("B_COL"); if (nN || op.tN) def.push("B_NOR"); if (nR) def.push("B_RUG"); if (op.agua) def.push("B_AGUA"); if (d.caus) def.push("B_CAUS"); if (op.vidrio) def.push("B_VIDRIO"); if (d.luz) def.push("B_LUZ");
     if (!op.sinMascara) def.push("B_MASK");
     const defBase = def;
     m.userData.real = d; m.userData.un = un;
@@ -244,6 +247,8 @@
     if (!R.cieloSucio || !R.cuboCam) return; R.cieloSucio = false;
     const tm = renderer.toneMapping, rt0 = renderer.getRenderTarget(); renderer.toneMapping = THREE.NoToneMapping;
     R.cuboCam.update(renderer, R.escenaCielo); renderer.toneMapping = tm; renderer.setRenderTarget(rt0);
+    /* En Básica la luz ambiental sale del propio cielo horneado: sin descargar ningún HDR */
+    if (R.envCieloPedido && R.activo) { const pm = new THREE.PMREMGenerator(renderer), env = pm.fromCubemap(R.cuboRT.texture).texture; pm.dispose(); if (R.envCielo) R.envCielo.dispose(); R.envCielo = env; scene.environment = env; R.envAct = env; }
   }
   function entornoHDR(nombre) {
     if (R.cieloEnv[nombre]) return R.cieloEnv[nombre];
@@ -267,6 +272,8 @@
     if (R.cieloSky) { R.cieloSucio = true; const u = R.cieloSky.material.uniforms; u.turbidity.value = C.turb; u.rayleigh.value = C.ray; u.mieCoefficient.value = C.mie; u.mieDirectionalG.value = C.g; u.sunPosition.value.copy(solDir).multiplyScalar(400); u.uGan.value = C.gan; }
     R.solBase = (LUCES[n] || LUCES.Natural).i * C.sol; R.hemiBase = (LUCES[n] || LUCES.Natural).h * .35; R.abS = -1;
     scene.fog = new THREE.FogExp2(C.niebla, C.dens);
+    if (R.nivel === 0) { R.envCieloPedido = true; R.cieloSucio = true; aplicaLuces(); return; }
+    R.envCieloPedido = false;
     const pedido = n; entornoHDR(C.hdr).then(env => { if (R.ambiente === pedido && R.activo) { scene.environment = env; R.envAct = env; } }).catch(e => console.warn(e));
     aplicaLuces();
   }
@@ -526,9 +533,8 @@
     if (Aj.efectos !== undefined && Aj.efectos !== null) { R.nivel = Aj.efectos; R.fijo = true; }
     else {
       const mem = navigator.deviceMemory || 8, nucleos = navigator.hardwareConcurrency || 8, g = gamaGPU();
-      R.nivel = g !== null ? g : tactil ? (mem >= 6 ? 1 : 0) : (mem < 4 || nucleos <= 2 ? 1 : 2);
-      if (tactil && R.nivel > 1) R.nivel = 1;
-      if (g === 1 && !tactil) R.escala = .9;
+      /* Arranca siempre en Básica: carga rápida y fluida en cualquier equipo. La calidad se sube en Ajustes */
+      R.nivel = 0; R.gama = g;
     }
     if (R.nivel >= 1 && !preparaPost()) R.nivel = 0;
     sol.shadow.mapSize.set(R.nivel >= 2 ? 4096 : R.nivel ? 2048 : 1024, R.nivel >= 2 ? 4096 : R.nivel ? 2048 : 1024);
@@ -538,7 +544,7 @@
     const on = R.nivel >= 2, todos = [...R.mats.values(), ...(matsCoche ? [...matsCoche.pintura, matsCoche.cristal, matsCoche.carbono] : [])];
     todos.forEach(m => { if (!m.isMeshPhysicalMaterial) return; const u = m.userData; if (u.cc0 === undefined) { u.cc0 = m.clearcoat; u.sh0 = m.sheen; } const cc = on ? u.cc0 : 0, sh = on ? u.sh0 : 0; if (m.clearcoat !== cc || m.sheen !== sh) { m.clearcoat = cc; m.sheen = sh; } });
     const tipoS = R.nivel >= 2 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap; if (renderer.shadowMap.type !== tipoS) { renderer.shadowMap.type = tipoS; renderer.shadowMap.needsUpdate = true; }
-    const lig = R.nivel === 0; if (R.ligeroPrev !== lig) { R.ligeroPrev = lig; R.mats.forEach(m => m.needsUpdate = true); }
+    const lig = R.nivel === 0; if (R.ligeroPrev !== lig) { const antes = R.ligeroPrev; R.ligeroPrev = lig; R.mats.forEach(m => { if (!lig && m.userData.mapas) m.userData.mapas(); if (antes !== undefined && m.userData.real) m.envMapIntensity *= lig ? .5 : 2; m.needsUpdate = true; }); if (!lig && R.activo) ambienteReal(R.ambiente, R.solDir || new THREE.Vector3(-.55, .75, .5)); }
     const an = Math.min(renderer.capabilities.getMaxAnisotropy(), R.nivel >= 2 ? 16 : R.nivel ? 8 : 4); R.tex.forEach(t => { if (t.anisotropy !== an) { t.anisotropy = an; t.needsUpdate = true; } });
   }
   function ponNivel(n, fijo) {

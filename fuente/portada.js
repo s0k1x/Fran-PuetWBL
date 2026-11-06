@@ -93,6 +93,7 @@
     const prio = FORMATOS.find(e => modelos.some(m => m.e === e)); if (!prio) throw new Error("No encuentro un modelo 3D en ese archivo.");
     const m = modelos.find(x => x.e === prio), g = await leeModelo(m, tabla, new Set()), { env } = acabado(g); if (env) await entorno();
     orientar(g, m.e); g.scale.setScalar(escalar(g)); const h = new THREE.Group(); h.add(g); optimizaModelo(h);
+    pf.modelo = h; pf.rooms = estancias || []; pf.nombreModelo = m.nombre.replace(/\.[^.]+$/, "");
     const a = await calcular(triangulos(h)); escaparate.clear(); escaparate.add(h); await registraReal("portada", h, estancias || []); await esperaReal();
     pf.capas = null; const cub = [], pa = []; h.traverse(o => { if (o.isMesh) { if (/^CUB_/.test(o.name)) cub.push(o); else if (/^PA_/.test(o.name)) pa.push(o); } });
     PARADAS = cub.length && pa.length ? PARADAS_VILLA : paradasDe(a); if (cub.length && pa.length) pf.capas = { cub, pa }; pf.yC = pf.yP = undefined; pf.ambAct = null; pf.caja = new THREE.Box3().setFromObject(h); const [ax, ay, az, bx, by, bz] = a.caja; pf.centro = V((ax + bx) / 2, ay, (az + bz) / 2); pf.base = a.planos[0] ? a.planos[0].floorY : ay; pf.altoCorte = by + 1; pf.propio = true;
