@@ -152,7 +152,7 @@
   /* Pabellón de cristal: losa volada sobre pilares finos, muros de piedra y lámina de agua */
   function creaPabellon() {
     const g = new THREE.Group(), B = constructor(g);
-    B("cesped", 40, .3, 32, -12, -.3, -10); B("piedra_natural", 22, .55, 13, -2, -.3, 0); B("agua_piscina", 6, .02, 5, -1.5, .2, 1.2); B("azulejo_piscina", 6, .02, 5, -1.5, .05, 1.2);
+    B("cesped", 40, .3, 32, -12, -.3, -10); B("piedra_natural", 22, .55, 13, -2, -.3, 0); B("azulejo_piscina", 6.2, .01, 5.2, -1.6, .27, 1.1); B("agua_piscina", 6, .012, 5, -1.5, .275, 1.2);
     B("piedra_natural", 22, .02, 13, -2, .25, 0, "suelo");
     B("hormigon_claro", 14, .3, 9, 4, 3.5, 2); B("techo_blanco", 13.8, .02, 8.8, 4.1, 3.48, 2.1);
     [[5, 3], [5, 10], [12, 3], [12, 10], [16.5, 3], [16.5, 10]].forEach(([x, z]) => B("acero", .14, 3.25, .14, x, .27, z));
