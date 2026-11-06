@@ -55,6 +55,7 @@
   BOTONES.aju = function (p) {
     aju0(p);
     opciones(p, "Tema", [["oscuro", "Oscuro"], ["claro", "Claro"], ["auto", "Automático"]], Aj.tema || "oscuro", ponTema);
+    interruptor(p, "Modo rendimiento", !!Aj.modoRend, v => { Aj.modoRend = R.modoRend = v; guardaAj(); if (v) ponNivel(0, true); else { Aj.efectos = null; R.fijo = false; ponNivel(gamaGPU() ?? 1); } R.escala = 1; medir(); aviso(v ? "Modo rendimiento: máxima fluidez en equipos modestos." : "Calidad automática según tu equipo."); });
     interruptor(p, "Sonidos de la interfaz", !!Aj.sonido, v => { Aj.sonido = v; guardaAj(); if (v) sonido(); });
     const b = texto("button", "linea"); b.type = "button"; b.innerHTML = ico("subir") + "<div>Instalar la app<small>Ábrela desde la pantalla de inicio, también sin conexión</small></div>"; b.onclick = instalaApp; p.append(b);
   };

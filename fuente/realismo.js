@@ -242,6 +242,7 @@
   }
   /* Ambiente: cambia cielo, entorno, niebla, exposición y lámparas. Se llama desde solEn */
   function ambienteReal(n, solDir) {
+    R.sucio = true;
     const C = CIELOS[n] || CIELOS.Natural; R.ambiente = n; R.exp = C.exp; R.solDir = solDir.clone().normalize(); U_R.uNoche.value = C.noche; U_R.uCaus.value = C.noche > .7 ? .15 : .6 * (1 - C.noche * .5);
     if (!R.activo) return;
     if (R.cielo) { const u = R.cielo.material.uniforms; u.turbidity.value = C.turb; u.rayleigh.value = C.ray; u.mieCoefficient.value = C.mie; u.mieDirectionalG.value = C.g; u.sunPosition.value.copy(solDir).multiplyScalar(400); u.uGan.value = C.gan; }
@@ -252,6 +253,7 @@
   }
   /* Lámparas: encendidas solas al atardecer y de noche, o como diga quien visita (también la IA) */
   function aplicaLuces() {
+    R.sucio = true;
     const C = CIELOS[R.ambiente] || CIELOS.Natural, on = R.lucesOn === null ? C.noche >= .25 : R.lucesOn;
     U_R.uLuz.value = on ? 1 + C.noche * 1.1 : .04;
     /* Luz de relleno de las lámparas en todo el interior: ilumina como varias luces sin costar como ellas */
@@ -389,18 +391,18 @@
     const v = renderer.getDrawingBufferSize(new THREE.Vector2()), w = v.x, h = v.y; if (w === PQ.w && h === PQ.h && PQ.hdr) return; PQ.w = w; PQ.h = h;
     ["hdr", "pre", "ao1", "ao2"].forEach(k => PQ[k] && PQ[k].dispose()); (PQ.bl || []).forEach(x => { x.a.dispose(); x.b.dispose(); });
     /* Profundidad de 24 bits: con 16 las superficies cercanas se pelean a distancia y salen rayas */
-    PQ.hdr = rt(w, h, { depthBuffer: true, samples: R.capturando ? 0 : 4, depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType) }); PQ.hdr.ignoreDepthForMultisampleCopy = false;
+    PQ.hdr = rt(w, h, { depthBuffer: true, samples: R.capturando ? 0 : R.nivel >= 2 ? 4 : 2, depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType) }); PQ.hdr.ignoreDepthForMultisampleCopy = false;
     const hw = w >> 1, hh = h >> 1;
     PQ.pre = rt(hw, hh, { type: THREE.UnsignedByteType, depthBuffer: true, depthTexture: new THREE.DepthTexture(hw, hh, THREE.UnsignedIntType), minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
     PQ.ao1 = rt(hw, hh, { type: THREE.UnsignedByteType }); PQ.ao2 = rt(hw, hh, { type: THREE.UnsignedByteType });
-    PQ.bl = []; let bw = hw, bh = hh; for (let i = 0; i < 4; i++) { PQ.bl.push({ a: rt(bw, bh), b: rt(bw, bh), w: bw, h: bh }); bw = Math.max(1, bw >> 1); bh = Math.max(1, bh >> 1); }
+    PQ.bl = []; let bw = hw >> 1, bh = hh >> 1; for (let i = 0; i < 4; i++) { PQ.bl.push({ a: rt(bw, bh), b: rt(bw, bh), w: bw, h: bh }); bw = Math.max(1, bw >> 1); bh = Math.max(1, bh >> 1); }
   }
   const usaPost = () => R.nivel >= 1 && PQ.listo && R.activo && !(renderer.xr && renderer.xr.isPresenting);
   /* Casa abierta (sin techo, por plantas o en maqueta): sin sombras interiores y con luz plena para verlo todo */
   function casaAbierta() {
     if (!R.activo) return;
     const prev = R.abS; R.abS = prev < 0 ? R.abObj : prev + (R.abObj - prev) * (calmo ? 1 : .1);
-    if (Math.abs(R.abS - prev) < 1e-4) return;
+    if (Math.abs(R.abS - prev) < 1e-4) return; R.sucio = true;
     const a = R.abS; U_R.uEnvIn.value = .82 + .18 * a;
     sol.intensity = R.solBase * (1 - .35 * a); hemi.intensity = R.hemiBase * (1 + 2.2 * a);
     const quiere = a < .4, e = ESC[escAct];
@@ -414,8 +416,21 @@
   }
   /* Ganchos de otros módulos (vídeo promocional, visita en directo…) antes de cada imagen */
   R.antes = []; R.ultT = performance.now();
-  function pintar() {
+  /* Dibujar solo si hace falta: con la cámara quieta y sin cambios se baja a 10 imágenes por segundo,
+     y a 2 si sigue quieta, para que el agua aún se mueva sin gastar. Cualquier toque o tecla vuelve a 60 */
+  R.quietaDesde = 0; R.ultPintado = 0; R.sucio = true;
+  ["pointerdown", "pointermove", "keydown", "wheel", "resize", "scroll"].forEach(ev => addEventListener(ev, () => R.sucio = true, { passive: true, capture: true }));
+  function hacePintar(ahora) {
+    const f = camera.matrixWorld.elements, firma = f[12].toFixed(3) + f[13].toFixed(3) + f[14].toFixed(3) + f[0].toFixed(4) + f[2].toFixed(4) + f[9].toFixed(4) + camera.fov + T.clip;
+    if (firma !== R.firma || R.sucio || R.antes.length > 2 || T.fly || Object.values(T.teclas).some(Boolean) || T.joy.id !== null) { R.firma = firma; R.sucio = false; R.quietaDesde = ahora; return true; }
+    const quieta = ahora - R.quietaDesde, cada = quieta > 6000 ? 500 : quieta > 400 ? 100 : 0;
+    return ahora - R.ultPintado >= cada;
+  }
+  function pintar(forzar = true) {
     const ahora = performance.now(), dtP = Math.min(.05, (ahora - R.ultT) / 1000); R.ultT = ahora; R.antes.forEach(f => f(dtP, ahora));
+    camera.updateMatrixWorld();
+    if (!forzar && !hacePintar(ahora)) return;
+    R.ultPintado = ahora; R.nPint = (R.nPint || 0) + 1;
     R.t += 1 / 60; U_R.uT.value = ahora / 1000; casaAbierta();
     if (R.comparar && R.activo) { pintaComparado(); return; }
     /* Plano cercano según el modo: de lejos, más precisión de profundidad */
@@ -466,21 +481,44 @@
     renderer.setScissorTest(false); renderer.toneMappingExposure = e;
   }
   /* Calidad: elige al empezar y baja sola si la imagen va a tirones */
+  /* Qué tarjeta gráfica hay: decide el punto de partida antes de medir nada */
+  function gamaGPU() {
+    let t = ""; try { const gl = renderer.getContext(), e = gl.getExtension("WEBGL_debug_renderer_info"); t = String(e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)).toLowerCase(); } catch (x) {}
+    R.gpu = t;
+    if (/swiftshader|llvmpipe|software|basic render|microsoft basic/.test(t)) return 0;
+    if (/intel.*(hd graphics [2-5]\d{2}\b|hd graphics$|gma)|mali-[gt][0-7]\d\b|adreno \(tm\) [1-5]\d\d|powervr|sgx/.test(t)) return 0;
+    if (/rtx|gtx 1[06-9]|gtx [2-9]\d|radeon rx|rx [5-7]\d\d\d?|radeon pro|apple m[1-9]|apple gpu|arc a/.test(t)) return 2;
+    if (/intel|iris|uhd|radeon(\(tm\))? graphics|vega|mali|adreno|apple a1[0-4]/.test(t)) return 1;
+    return null;
+  }
   function nivelInicial() {
+    R.modoRend = !!Aj.modoRend;
     if (Aj.efectos !== undefined && Aj.efectos !== null) { R.nivel = Aj.efectos; R.fijo = true; }
-    else { const mem = navigator.deviceMemory || 8, nucleos = navigator.hardwareConcurrency || 8; R.nivel = tactil ? (mem >= 6 ? 1 : 0) : (mem < 4 || nucleos <= 2 ? 1 : 2); }
+    else {
+      const mem = navigator.deviceMemory || 8, nucleos = navigator.hardwareConcurrency || 8, g = gamaGPU();
+      R.nivel = g !== null ? g : tactil ? (mem >= 6 ? 1 : 0) : (mem < 4 || nucleos <= 2 ? 1 : 2);
+      if (tactil && R.nivel > 1) R.nivel = 1;
+      if (g === 1 && !tactil) R.escala = .9;
+    }
     if (R.nivel >= 1 && !preparaPost()) R.nivel = 0;
     sol.shadow.mapSize.set(R.nivel >= 2 ? 4096 : R.nivel ? 2048 : 1024, R.nivel >= 2 ? 4096 : R.nivel ? 2048 : 1024);
+  }
+  /* Barniz y brillo de tela son de lo más caro por píxel: solo en Ultra */
+  function extrasMateriales() {
+    const on = R.nivel >= 2, todos = [...R.mats.values(), ...(matsCoche ? [...matsCoche.pintura, matsCoche.cristal, matsCoche.carbono] : [])];
+    todos.forEach(m => { if (!m.isMeshPhysicalMaterial) return; const u = m.userData; if (u.cc0 === undefined) { u.cc0 = m.clearcoat; u.sh0 = m.sheen; } const cc = on ? u.cc0 : 0, sh = on ? u.sh0 : 0; if (m.clearcoat !== cc || m.sheen !== sh) { m.clearcoat = cc; m.sheen = sh; } });
+    const an = Math.min(renderer.capabilities.getMaxAnisotropy(), R.nivel >= 2 ? 16 : R.nivel ? 8 : 4); R.tex.forEach(t => { if (t.anisotropy !== an) { t.anisotropy = an; t.needsUpdate = true; } });
   }
   function ponNivel(n, fijo) {
     R.nivel = n; if (fijo) { R.fijo = true; Aj.efectos = n; guardaAj(); }
     if (n >= 1 && !preparaPost()) R.nivel = 0;
+    PQ.w = 0; extrasMateriales(); R.sucio = true;
     const s = R.nivel >= 2 ? 4096 : R.nivel ? 2048 : 1024; if (sol.shadow.mapSize.x !== s) { sol.shadow.mapSize.set(s, s); if (sol.shadow.map) { sol.shadow.map.dispose(); sol.shadow.map = null; } renderer.shadowMap.needsUpdate = true; }
   }
   /* Resolución dinámica: busca unos 55 fps en ordenador y 40 en móvil. Primero ajusta la resolución interna
      (casi invisible gracias al realce); solo si no basta, y sin calidad fijada a mano, baja los efectos. Si sobra margen, sube */
   function vigilaRitmo(dt) {
-    if (document.hidden || dt <= 0) return;
+    if (document.hidden || dt <= 0 || performance.now() - R.quietaDesde > 300) return;
     R.medidas.push(dt); if (R.medidas.length < 90) return;
     const o = R.medidas.slice().sort((a, b) => a - b), med = o[45]; R.medidas = [];
     const meta = tactil ? 1 / 40 : 1 / 55;
@@ -490,3 +528,5 @@
     } else if (med < meta * .78 && R.escala < 1) { R.escala = Math.min(1, +(R.escala + .05).toFixed(2)); medir(); }
   }
   nivelInicial();
+  /* Las texturas y materiales que se crean después también siguen el nivel */
+  setTimeout(extrasMateriales, 4000);
