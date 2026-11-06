@@ -417,7 +417,7 @@
     const v = renderer.getDrawingBufferSize(new THREE.Vector2()), w = v.x, h = v.y; if (w === PQ.w && h === PQ.h && PQ.hdr) return; PQ.w = w; PQ.h = h;
     ["hdr", "pre", "ao1", "ao2"].forEach(k => PQ[k] && PQ[k].dispose()); (PQ.bl || []).forEach(x => { x.a.dispose(); x.b.dispose(); });
     /* Profundidad de 24 bits: con 16 las superficies cercanas se pelean a distancia y salen rayas */
-    PQ.hdr = rt(w, h, { depthBuffer: true, samples: R.capturando ? 0 : R.nivel >= 2 || heroe() ? 4 : 2, depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType) }); PQ.hdr.ignoreDepthForMultisampleCopy = false;
+    PQ.hdr = rt(w, h, { depthBuffer: true, samples: R.capturando ? 0 : R.nivel >= 2 ? 4 : 2, depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType) }); PQ.hdr.ignoreDepthForMultisampleCopy = false;
     const hw = w >> 1, hh = h >> 1;
     PQ.pre = rt(hw, hh, { type: THREE.UnsignedByteType, depthBuffer: true, depthTexture: new THREE.DepthTexture(hw, hh, THREE.UnsignedIntType), minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
     PQ.ao1 = rt(hw, hh, { type: THREE.UnsignedByteType }); PQ.ao2 = rt(hw, hh, { type: THREE.UnsignedByteType });

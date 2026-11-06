@@ -29,7 +29,7 @@
 
   /* Cabecera sólida al bajar y aviso de desliza */
   const barra = $("barraP");
-  portada.addEventListener("scroll", () => { const y = portada.scrollTop; barra.classList.toggle("solida", y > 30); $("desliza").style.opacity = y > 80 ? 0 : 1; marcaIndice(); }, { passive: true });
+  let scrollPend = false; portada.addEventListener("scroll", () => { if (scrollPend) return; scrollPend = true; requestAnimationFrame(() => { scrollPend = false; const y = portada.scrollTop; barra.classList.toggle("solida", y > 30); $("desliza").style.opacity = y > 80 ? 0 : 1; marcaIndice(); }); }, { passive: true });
 
   /* Menú móvil: la misma navegación en una hoja */
   $("bMenu").addEventListener("click", () => { const on = !barra.classList.contains("menu"); barra.classList.toggle("menu", on); $("bMenu").setAttribute("aria-expanded", String(on)); $("bMenu").innerHTML = ico(on ? "x" : "menu"); if (on) cierraPanel(); });
