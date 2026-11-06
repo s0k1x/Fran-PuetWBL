@@ -173,7 +173,7 @@
     const k = { caja: new THREE.Box3(V3(-2.4, .12, -1), V3(2.4, 1.3, 1)), faros: V3(3, .6, 0), nf: 1, suelo: .12 };
     g.add(supercoche(k, 0));
     g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-    luzEstudio(g, { amb: .9, clave: 1.6, relleno: .8, pos: [4, 8, 6] });
+    luzEstudio(g, { amb: .6, clave: 1.25, relleno: .55, pos: [4, 8, 6] });
     return { g, amb: "Blanco", estilo: "Original", rooms: [estanciaM("Sala de exposición", -11, 11, -9, 9)], nombre: "Superdeportivo" };
   }
   /* Galería de arte con la escultura en el centro */
