@@ -461,6 +461,31 @@
     if (T.modo === "portada") { if (!pieY) midePie(); const po = document.getElementById("portada"); return po && po.scrollTop > pieY; }
     return false;
   }
+  /* Escalado inteligente (Básica): la escena se calcula al 70 % de resolución y un paso barato la amplía
+     con realce de bordes. La mitad de píxeles que sombrear, casi el doble de fluidez, sin pérdida visible */
+  const ES = { rt: null, w: 0, h: 0 };
+  const escaladoActivo = () => Aj.escalado !== false && !R.capturando && renderer.capabilities.isWebGL2 && !(renderer.xr && renderer.xr.isPresenting);
+  const mEsc = new THREE.ShaderMaterial({ uniforms: { tA: { value: null }, uPx: { value: new THREE.Vector2() }, uNit: { value: .5 } }, vertexShader: VS_Q, depthTest: false, depthWrite: false,
+    fragmentShader: `varying vec2 vUv; uniform sampler2D tA; uniform vec2 uPx; uniform float uNit;
+      vec3 srgb(vec3 c) { return mix(c * 12.92, pow(c, vec3(.41666)) * 1.055 - .055, step(.0031308, c)); }
+      void main() {
+        vec3 c = texture2D(tA, vUv).rgb, n = texture2D(tA, vUv + vec2(0., uPx.y)).rgb, s = texture2D(tA, vUv - vec2(0., uPx.y)).rgb, e = texture2D(tA, vUv + vec2(uPx.x, 0.)).rgb, o = texture2D(tA, vUv - vec2(uPx.x, 0.)).rgb;
+        vec3 mn = min(c, min(min(n, s), min(e, o))), mx = max(c, max(max(n, s), max(e, o)));
+        /* Realce adaptativo (al estilo CAS): fuerte en zonas suaves, contenido en bordes con mucho contraste */
+        vec3 amp = clamp(min(mn, 1. - mx) / max(mx, 1e-4), 0., 1.), w = -sqrt(amp) * uNit * .2;
+        vec3 r = clamp((c + (n + s + e + o) * w) / (1. + 4. * w), 0., 1.);
+        gl_FragColor = vec4(srgb(r), 1.);
+      }` });
+  function escalaYPinta() {
+    const v = renderer.getDrawingBufferSize(new THREE.Vector2()), k = tactil ? .72 : .7, w = Math.max(2, Math.round(v.x * k)), h = Math.max(2, Math.round(v.y * k));
+    if (!ES.rt || ES.w !== w || ES.h !== h) {
+      if (ES.rt) ES.rt.dispose(); ES.w = w; ES.h = h;
+      const tipo = renderer.extensions.has("EXT_color_buffer_half_float") || renderer.extensions.has("EXT_color_buffer_float") ? THREE.HalfFloatType : THREE.UnsignedByteType;
+      ES.rt = new THREE.WebGLRenderTarget(w, h, { type: tipo, samples: 2, depthBuffer: true, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false });
+    }
+    renderer.setRenderTarget(ES.rt); renderer.render(scene, camera);
+    mEsc.uniforms.tA.value = ES.rt.texture; mEsc.uniforms.uPx.value.set(1 / w, 1 / h); paso(mEsc, null);
+  }
   function pintar(forzar = true) {
     const ahora = performance.now(), dtP = Math.min(.05, (ahora - R.ultT) / 1000); R.ultT = ahora; R.antes.forEach(f => f(dtP, ahora));
     camera.updateMatrixWorld();
@@ -476,6 +501,7 @@
     if (!usaPost()) {
       const tm = renderer.toneMapping; if (tm !== THREE.ACESFilmicToneMapping) { renderer.toneMapping = THREE.ACESFilmicToneMapping; }
       const e = renderer.toneMappingExposure; renderer.toneMappingExposure = e * (R.activo ? R.exp * R.expAuto : 1);
+      if (escaladoActivo()) { escalaYPinta(); renderer.toneMappingExposure = e; return; }
       renderer.setRenderTarget(null); renderer.render(scene, camera); renderer.toneMappingExposure = e; return;
     }
     tamPost();
