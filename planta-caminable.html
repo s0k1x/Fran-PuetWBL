@@ -838,6 +838,57 @@ html.claro #barraP.solida { background: rgba(248, 247, 243, .94); }
 #verMuestras::after { content: "→"; opacity: 0; transform: translateX(-4px); transition: all .3s var(--curva); }
 #verMuestras:hover::after { opacity: 1; transform: none; }
 
+/* ==========================================================================
+   Minimalismo 2: menos elementos, más aire, tipografía más fina
+   ========================================================================== */
+:root { --negro: #000; }
+body, #app, #cargador { background: #000; }
+#barraP { padding-top: calc(18px + env(safe-area-inset-top, 0px)); padding-bottom: 18px; }
+#barraP nav { background: transparent; box-shadow: none; gap: 6px; }
+#barraP nav button { font-size: 13px; padding: 8px 14px; color: #a9a8a2; }
+#barraP .icono { width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center; color: var(--gris2); transition: color .2s, background .2s; }
+#barraP .icono:hover, #barraP .icono[aria-expanded="true"] { color: #fff; background: var(--hover); }
+#barraP .icono svg { width: 17px; height: 17px; }
+#barraP.solida { box-shadow: none; border-bottom: 1px solid rgba(255, 255, 255, .06); }
+.fantasma { box-shadow: none; color: var(--gris2); }
+.fantasma:hover { box-shadow: none; color: #fff; }
+/* Portada: titulares finos, cifras discretas, solo dos enlaces secundarios */
+#portada h1 { font-weight: 400; letter-spacing: -.055em; font-size: clamp(48px, 6.8vw, 104px); }
+#portada h2 { font-weight: 400; letter-spacing: -.05em; }
+.txt { gap: 22px; }
+.txt p { color: #a9a8a2; font-size: 16px; max-width: 42ch; }
+.pildora { background: transparent; box-shadow: none; padding-left: 0; color: var(--gris); }
+.pildora i { background: transparent; color: var(--acento); padding: 0; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; font-size: 10px; }
+.cifras { border-top: 0; padding-top: 4px; gap: 18px 54px; }
+.cifras b { font-weight: 300; font-size: clamp(24px, 2.2vw, 32px); }
+.cifras span { color: #6f6e69; }
+#bUnir, #bCuenta { display: none !important; }
+.secund { gap: 8px 28px; }
+#sombraP { background: radial-gradient(110% 90% at 0% 55%, rgba(0, 0, 0, .78), rgba(0, 0, 0, .25) 40%, transparent 60%); }
+#indice button i { background: rgba(255, 255, 255, .22); }
+#indice button span { color: #6f6e69; }
+.eti { color: #8d8c86; }
+.eti::before { opacity: .4; }
+#portada h1 em, #portada h2 em { color: #e2d3b2; }
+/* Dock: solo iconos, con el nombre al pasar */
+#dock .tool span { display: none; }
+#dock .tool { width: 42px; height: 42px; padding: 0; justify-content: center; border-radius: 12px; }
+#dock .tool svg.i { width: 18px; height: 18px; }
+#dock { gap: 2px; }
+[data-tip] { position: relative; }
+[data-tip]:hover::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%); padding: 6px 10px; border-radius: 8px; background: #f2f1ec; color: #000; font-size: 11px; white-space: nowrap; pointer-events: none; animation: entra .25s var(--curva); }
+#esq { background: transparent; box-shadow: none; padding-left: 4px; }
+#etiPlanta { background: transparent; box-shadow: none; padding-left: 4px; color: #6f6e69; }
+#mini { box-shadow: none; border: 1px solid rgba(255, 255, 255, .06); background: rgba(0, 0, 0, .55); }
+/* Paneles: más aire y menos bordes */
+#panelP { padding: 22px; gap: 18px; box-shadow: var(--sombra); border: 1px solid rgba(255, 255, 255, .06); }
+.rejilla .tool { box-shadow: none; background: rgba(255, 255, 255, .03); }
+.linea { padding: 12px; }
+#ficha, #hoja { box-shadow: var(--sombra); border: 1px solid rgba(255, 255, 255, .06); }
+html.claro #barraP.solida { border-bottom-color: rgba(0, 0, 0, .06); }
+html.claro .cifras span, html.claro #etiPlanta { color: #8b8a84; }
+@media (max-width: 960px) { #barraP .icono { display: none; } }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
@@ -853,9 +904,10 @@ html.claro #barraP.solida { background: rgba(248, 247, 243, .94); }
     <header id="barraP">
       <a id="marca" href="./" data-i="logo" aria-label="INNRA3D, inicio"><span class="pal">INNRA<b>3D</b></span></a>
       <nav aria-label="Principal">
-        <button type="button" data-p="vista" aria-expanded="false">Explorar<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="amb" aria-expanded="false">Ambiente<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="rec" aria-expanded="false">Recorrido</button><button type="button" data-p="herr" aria-expanded="false">Herramientas<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="ia" aria-expanded="false"><i class="punto-ia"></i>IA</button><button type="button" data-p="aju" aria-expanded="false">Ajustes</button>
+        <button type="button" data-p="vista" aria-expanded="false">Modelos<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="amb" aria-expanded="false">Ambiente<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="herr" aria-expanded="false">Herramientas<svg class="i flechita" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><button type="button" data-p="ia" aria-expanded="false"><i class="punto-ia"></i>IA</button>
       </nav>
       <div class="acc">
+        <button type="button" class="icono" data-p="aju" aria-expanded="false" aria-label="Ajustes" title="Ajustes" data-i="ajustes"></button>
         <button type="button" id="bpCuenta" class="fantasma" data-i="usuario"><span class="txtC">Iniciar sesión</span></button>
         <label class="azul" for="archivo" data-i="subir">Cargar escaneo</label>
         <button type="button" id="bMenu" aria-label="Abrir menú" aria-expanded="false" data-i="menu"></button>
@@ -1011,10 +1063,10 @@ html.claro #barraP.solida { background: rgba(248, 247, 243, .94); }
     </div>
     <span class="sep"></span>
     <div id="herr">
-      <button id="bLuz" class="tool" type="button" aria-pressed="false" data-i="bombilla" hidden><span>Luces</span></button>
-      <button id="bPla" class="tool" type="button" aria-pressed="false" data-i="plano"><span>Plano</span></button>
-      <button id="bMaq" class="tool" type="button" aria-pressed="false" data-i="maqueta"><span>Maqueta</span></button>
-      <button id="bHer" class="tool" type="button" aria-label="Herramientas" data-i="rejilla"><span>Herramientas</span></button><button id="bAju" class="tool" type="button" aria-pressed="false" hidden>Ajustes</button>
+      <button id="bLuz" class="tool" type="button" aria-pressed="false" data-i="bombilla" data-tip="Luces" hidden><span>Luces</span></button>
+      <button id="bPla" class="tool" type="button" aria-pressed="false" data-i="plano" data-tip="Plano · P"><span>Plano</span></button>
+      <button id="bMaq" class="tool" type="button" aria-pressed="false" data-i="maqueta" data-tip="Maqueta · M"><span>Maqueta</span></button>
+      <button id="bHer" class="tool" type="button" aria-label="Herramientas" data-i="rejilla" data-tip="Herramientas · K"><span>Herramientas</span></button><button id="bAju" class="tool" type="button" aria-pressed="false" hidden>Ajustes</button>
     </div>
   </nav>
   <div id="aviso" role="status" hidden></div>
@@ -2036,13 +2088,15 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     const v = renderer.getDrawingBufferSize(new THREE.Vector2()), w = v.x, h = v.y; if (w === PQ.w && h === PQ.h && PQ.hdr) return; PQ.w = w; PQ.h = h;
     ["hdr", "pre", "ao1", "ao2"].forEach(k => PQ[k] && PQ[k].dispose()); (PQ.bl || []).forEach(x => { x.a.dispose(); x.b.dispose(); });
     /* Profundidad de 24 bits: con 16 las superficies cercanas se pelean a distancia y salen rayas */
-    PQ.hdr = rt(w, h, { depthBuffer: true, samples: R.capturando ? 0 : R.nivel >= 2 ? 4 : 2, depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType) }); PQ.hdr.ignoreDepthForMultisampleCopy = false;
+    PQ.hdr = rt(w, h, { depthBuffer: true, samples: R.capturando ? 0 : R.nivel >= 2 || heroe() ? 4 : 2, depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType) }); PQ.hdr.ignoreDepthForMultisampleCopy = false;
     const hw = w >> 1, hh = h >> 1;
     PQ.pre = rt(hw, hh, { type: THREE.UnsignedByteType, depthBuffer: true, depthTexture: new THREE.DepthTexture(hw, hh, THREE.UnsignedIntType), minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
     PQ.ao1 = rt(hw, hh, { type: THREE.UnsignedByteType }); PQ.ao2 = rt(hw, hh, { type: THREE.UnsignedByteType });
     PQ.bl = []; let bw = hw >> 1, bh = hh >> 1; for (let i = 0; i < 4; i++) { PQ.bl.push({ a: rt(bw, bh), b: rt(bw, bh), w: bw, h: bh }); bw = Math.max(1, bw >> 1); bh = Math.max(1, bh >> 1); }
   }
-  const usaPost = () => R.nivel >= 1 && PQ.listo && R.activo && !(renderer.xr && renderer.xr.isPresenting);
+  /* La portada con escultura es una escena diminuta: siempre lleva el tratamiento de Ultra */
+  const heroe = () => T.modo === "portada" && !!(typeof pf !== "undefined" && pf.escultura);
+  const usaPost = () => !(renderer.xr && renderer.xr.isPresenting) && (heroe() ? preparaPost() : R.nivel >= 1 && PQ.listo && R.activo);
   /* Casa abierta (sin techo, por plantas o en maqueta): sin sombras interiores y con luz plena para verlo todo */
   function casaAbierta() {
     if (!R.activo) return;
@@ -2126,7 +2180,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     tamPost();
     if (renderer.toneMapping !== THREE.NoToneMapping) renderer.toneMapping = THREE.NoToneMapping;
     renderer.setRenderTarget(PQ.hdr); renderer.render(scene, camera);
-    const ao = R.nivel >= 2;
+    const ao = R.nivel >= 2 || heroe();
     /* Si la cámara no se ha movido, la oclusión del fotograma anterior sigue valiendo: no se repite */
     const me = camera.matrixWorld.elements, fa = PQ.firmaAO || (PQ.firmaAO = new Float64Array(18)); let quieta = !R.aoSucio;
     for (let i = 0; i < 16; i++) if (fa[i] !== me[i]) { quieta = false; fa[i] = me[i]; }
@@ -2143,13 +2197,13 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
       d.tA.value = PQ.ao2.texture; d.uDir.value.set(0, 1.5 / PQ.ao1.height); paso(PQ.mDes, PQ.ao1);
     }
     /* Resplandor: brillo → bajar → subir sumando */
-    const bl = PQ.bl, b = PQ.mBri.uniforms; b.tA.value = PQ.hdr.texture; b.uPx.value.set(.5 / PQ.w, .5 / PQ.h); b.uUmbral.value = 1.05; paso(PQ.mBri, bl[0].a);
+    const bl = PQ.bl, b = PQ.mBri.uniforms; b.tA.value = PQ.hdr.texture; b.uPx.value.set(.5 / PQ.w, .5 / PQ.h); b.uUmbral.value = heroe() ? 2.2 : 1.05; paso(PQ.mBri, bl[0].a);
     for (let i = 1; i < bl.length; i++) { const u = PQ.mBaja.uniforms; u.tA.value = bl[i - 1].a.texture; u.uPx.value.set(1 / bl[i - 1].w, 1 / bl[i - 1].h); paso(PQ.mBaja, bl[i].a); }
     for (let i = bl.length - 1; i > 0; i--) { const u = PQ.mSube.uniforms, src = i === bl.length - 1 ? bl[i].a : bl[i].b; u.tA.value = src.texture; u.tB.value = bl[i - 1].a.texture; u.uPx.value.set(.5 / bl[i].w, .5 / bl[i].h); u.uMez.value = 1; paso(PQ.mSube, bl[i - 1].b); }
     /* Exposición automática: como una cámara, mide la luz media cada pocos fotogramas */
     const f = PQ.mFin.uniforms; f.tHDR.value = PQ.hdr.texture; f.uPx.value.set(1 / PQ.w, 1 / PQ.h); f.uNit.value = tactil ? .38 : .28; f.tAO.value = PQ.ao1.texture; f.tBloom.value = bl[0].b.texture; f.uConAO.value = ao; f.uConBloom.value = true;
     f.tProf.value = PQ.hdr.depthTexture; f.uDof.value = R.dof || 0; f.uFoco.value = R.foco || 5; f.uFundido.value = R.fundido || 0; f.uCam.value.set(camera.near, camera.far);
-    f.uExp.value = renderer.toneMappingExposure * R.exp * R.expAuto; f.uT.value = R.t; f.uBloom.value = .06 + U_R.uNoche.value * .025;
+    f.uExp.value = renderer.toneMappingExposure * R.exp * R.expAuto; f.uT.value = R.t; f.uBloom.value = heroe() ? .075 : .06 + U_R.uNoche.value * .025; if (heroe()) f.uExp.value = renderer.toneMappingExposure * .72;
     paso(PQ.mFin, null);
   }
   /* Comparar dos estilos: mitad izquierda con uno y derecha con otro, separados por una línea movible */
@@ -2906,7 +2960,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     const w = $("vista").clientWidth, h = $("vista").clientHeight;
     /* Presupuesto de píxeles: en monitores grandes no se dibuja a más de unos 3,7 millones de píxeles (≈ 2560 × 1440);
        la nitidez final la recupera el realce del posproceso. Por encima de eso solo se gasta memoria y se pierde fluidez */
-    const pr = Aj.calidad || (T.modo === "portada" && pf && pf.escultura ? 2 : tactil ? 2 : 1.5), presu = (T.modo === "portada" && pf && pf.escultura ? 8.3e6 : R && R.modoRend ? 1.3e6 : tactil ? 2.2e6 : !R || R.nivel >= 2 ? 3.7e6 : R.nivel === 1 ? 2.6e6 : 1.9e6), tope = Math.sqrt(presu / Math.max(1, w * h));
+    const pr = Aj.calidad || (T.modo === "portada" && pf && pf.escultura ? 2 : tactil ? 2 : 1.5), presu = (T.modo === "portada" && pf && pf.escultura ? 4.2e6 : R && R.modoRend ? 1.3e6 : tactil ? 2.2e6 : !R || R.nivel >= 2 ? 3.7e6 : R.nivel === 1 ? 2.6e6 : 1.9e6), tope = Math.sqrt(presu / Math.max(1, w * h));
     renderer.setPixelRatio(Math.max(.5, Math.min(devicePixelRatio || 1, pr, Aj.calidad ? 9 : tope)) * (R ? R.escala : 1)); renderer.setSize(w, h, false);
     camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
   }
@@ -4474,7 +4528,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     logo: '<defs><linearGradient id="gCubo" x1="12" y1="9" x2="21" y2="20" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="currentColor"/><stop offset="1" stop-color="currentColor" stop-opacity=".28"/></linearGradient></defs><path d="M12 12 21 7.2v9.6L12 22z" fill="url(#gCubo)" stroke="none"/><path d="M12 2 3 7.2v9.6L12 22M12 2l9 5.2M3 7.2 12 12v10" stroke-opacity=".75"/>',
     flecha: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>', abajo: '<path d="m6 9 6 6 6-6"/>',
     subir: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
-    menu: '<path d="M4 8h16M4 16h16"/>', x: '<path d="M18 6 6 18M6 6l12 12"/>',
+    menu: '<path d="M4 8h16M4 16h16"/>', ajustes: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>', x: '<path d="M18 6 6 18M6 6l12 12"/>',
     usuario: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     plano: '<path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z"/><path d="M9 4v13.5M15 6.5V20"/>',
     maqueta: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',
@@ -5181,7 +5235,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     grafico: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>', pincel: '<path d="M18.4 2.6a2 2 0 0 1 2.9 2.9L11 15.8 8.2 13z"/><path d="M8 14c-2.5 0-4 1.6-4 4 0 1-.6 2-1.5 2.5C4 21 6 21 7.5 20.2 9.4 19.2 10 17.4 10 16z"/>'
   });
   /* Botón de voz en el dock */
-  $("bLuz").insertAdjacentHTML("beforebegin", `<button id="bVoz" class="tool" type="button" aria-pressed="false" aria-label="Hablar con la IA">${ico("micro")}<span>Voz</span></button>`);
+  $("bLuz").insertAdjacentHTML("beforebegin", `<button id="bVoz" class="tool" type="button" aria-pressed="false" aria-label="Hablar con la IA" data-tip="Voz · V">${ico("micro")}<span>Voz</span></button>`);
   $("bVoz").onclick = escucha;
   addEventListener("keydown", e => { if (e.code === "KeyV" && T.modo === "andar" && !/^(text|textarea|search|password)$/.test(e.target.type) && !e.repeat) escucha(); });
 
@@ -5250,7 +5304,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
   ];
   function geoEscultura() {
     /* Tubo más grueso en el centro y afilado en los extremos, como una pieza tallada; mucho detalle en ordenador */
-    const S = tactil ? 520 : 960, Rr = tactil ? 18 : 30, gs = FORMAS.map(f => {
+    const S = tactil ? 640 : 1400, Rr = tactil ? 22 : 40, gs = FORMAS.map(f => {
       const c = new CurvaF(f), g = new THREE.TubeGeometry(c, S, .12, Rr, false), p = g.attributes.position, v = new THREE.Vector3(), q = new THREE.Vector3();
       for (let i = 0; i <= S; i++) { const u = i / S, k = .22 + .78 * Math.pow(Math.sin(Math.PI * u), .55); c.getPointAt(u, q); for (let j = 0; j <= Rr; j++) { const n = i * (Rr + 1) + j; v.fromBufferAttribute(p, n).sub(q).multiplyScalar(k).add(q); p.setXYZ(n, v.x, v.y, v.z); } }
       return g;
@@ -5274,7 +5328,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
           diffuseColor.rgb = mix(vec3(.018, .018, .02) * (.8 + .4 * bt), vec3(1., .78, .42), bOro);`)
         .replace("#include <metalnessmap_fragment>", "#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 1., bOro);")
         .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, .24, bOro);")
-        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1., .72, .35) * bVeta * (1. - uOro) * .35;");
+        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1., .72, .35) * bVeta * (1. - uOro) * 1.6;");
     };
     return m;
   }
@@ -5288,14 +5342,14 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     const m = matEscultura(), esc = new THREE.Mesh(geoEscultura(), m); esc.position.y = 1.62; esc.castShadow = true; esc.morphTargetInfluences = [0, 0]; g.add(esc);
     /* Sin peana: la pieza flota sobre el suelo del estudio */
     /* Suelo de estudio infinito: pulido y que se funde en la oscuridad */
-    const suelo = new THREE.Mesh(new THREE.CircleGeometry(40, 64), new THREE.MeshStandardMaterial({ color: 0x040404, roughness: .34, metalness: 0, envMapIntensity: .06 }));
+    const suelo = new THREE.Mesh(new THREE.CircleGeometry(40, 64), new THREE.MeshStandardMaterial({ color: 0x030303, roughness: .82, metalness: 0, envMapIntensity: 0 }));
     suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true;
     suelo.material.onBeforeCompile = sh => { sh.vertexShader = "varying vec2 vP;\n" + sh.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvP = position.xy;"); sh.fragmentShader = "varying vec2 vP;\n" + sh.fragmentShader.replace("#include <dithering_fragment>", "#include <dithering_fragment>\ngl_FragColor.rgb *= 1. - smoothstep(1.2, 6.5, length(vP));"); };
     g.add(suelo);
     /* Anillo dorado que orbita */
     const anillo = new THREE.Mesh(new THREE.TorusGeometry(1.25, .012, 10, 160), new THREE.MeshStandardMaterial({ color: 0xd8c49c, metalness: 1, roughness: .2 })); anillo.position.y = 1.62; g.add(anillo);
     /* Luces de estudio: clave con sombra suave, contraluz cálido y relleno frío */
-    const clave = new THREE.DirectionalLight(0xfff4e6, 1.05); clave.position.set(2.5, 7, 2.5); clave.castShadow = true; clave.shadow.mapSize.set(1024, 1024); Object.assign(clave.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: .5, far: 15 }); clave.shadow.bias = -.0004; clave.shadow.normalBias = .02;
+    const clave = new THREE.DirectionalLight(0xfff4e6, .7); clave.position.set(2.5, 7, 2.5); clave.castShadow = true; clave.shadow.mapSize.set(1024, 1024); Object.assign(clave.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: .5, far: 15 }); clave.shadow.bias = -.0004; clave.shadow.normalBias = .02;
     /* Contraluces que recortan la silueta sobre el negro: uno cálido y otro frío */
     const contra = new THREE.DirectionalLight(0xffc98a, 3.2); contra.position.set(-4, 3, -4);
     const contra2 = new THREE.DirectionalLight(0xbcd0ff, 2.4); contra2.position.set(4.5, 2.2, -3.5);
@@ -5318,6 +5372,9 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     e.m.userData.oro.value = A.oro + (B.oro - A.oro) * t;
     S_ESC.rot += dt * (calmo ? 0 : .22); e.esc.rotation.y = S_ESC.rot; e.esc.position.y = 1.62 + (calmo ? 0 : Math.sin(now * .0009) * .06); e.esc.rotation.z = calmo ? 0 : Math.sin(now * .0005) * .05; e.anillo.rotation.set(Math.PI / 2 + Math.sin(now * .0004) * .35, 0, now * .00025); e.anillo.position.y = 1.62 + Math.sin(now * .0007) * .05;
     T.clip = 1000; corte.constant = 1000; renderer.toneMappingExposure = Aj.brillo; R.abObj = 0;
+    /* Plano cinematográfico: enfoque en la escultura y fondo suavemente desenfocado */
+    R.dof = calmo ? 0 : .3; R.foco = camera.position.distanceTo(pf.centro);
+    if (renderer.shadowMap.type !== THREE.PCFSoftShadowMap) { renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.shadowMap.needsUpdate = true; }
     if (!pf.sombraT || now - pf.sombraT > 120) { pf.sombraT = now; renderer.shadowMap.needsUpdate = true; }
     const alto = portada.clientHeight;
     if (Math.abs(portada.scrollTop - (pf.yUlt ?? -1)) > .5) { pf.yUlt = portada.scrollTop; secs.forEach(s => { const x = s.firstElementChild, r = s.getBoundingClientRect(), dd = Math.abs(r.top + r.height / 2 - alto / 2) / alto, o = Math.max(0, Math.min(1, 1.5 - dd * 2.1)); x.style.opacity = s === secs[0] ? Math.max(.25, o) : o; x.style.transform = `translateY(${(1 - o) * 26}px)`; }); }
@@ -5331,7 +5388,11 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     catch (e) { console.error(e); }
   };
   /* Al salir de la portada vuelven las luces de la escena */
-  const interfazBase = interfaz; interfaz = function (modo) { luces.visible = modo !== "portada" || !pf.escultura; const r = interfazBase(modo); medir(); return r; };
+  const interfazBase = interfaz; interfaz = function (modo) {
+    luces.visible = modo !== "portada" || !pf.escultura; const r = interfazBase(modo);
+    if (modo !== "portada") { R.dof = 0; const t = R.nivel >= 2 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap; if (renderer.shadowMap.type !== t) { renderer.shadowMap.type = t; renderer.shadowMap.needsUpdate = true; } }
+    PQ.w = 0; medir(); return r;
+  };
 
   /* ---------- Modelos de ejemplo hechos con código: materiales con nombre, así toman el realismo ---------- */
   /* Los mismos colores base que la villa (su MTL): así cada material se ve como debe */
@@ -5443,6 +5504,7 @@ if (typeof module !== "undefined") module.exports = { unirEscaneos };
     titulo(p, "Modelos de ejemplo");
     MUESTRAS.forEach((mu, i) => { const b = texto("button", "linea"); b.type = "button"; b.innerHTML = `${ico(["casa", "sofa", "techo", "flecha", "chispa"][i])}<div><span></span><small></small></div>`; b.querySelector("span").textContent = mu.n; b.querySelector("small").textContent = mu.d; b.onclick = () => abreMuestra(mu); p.append(b); });
     const g = texto("button", "linea"); g.type = "button"; g.innerHTML = ico("galeria") + "<div>Galería de proyectos<small>Casas publicadas para recorrer</small></div>"; g.onclick = galeria; p.append(g);
+    const rc = texto("button", "linea"); rc.type = "button"; rc.innerHTML = ico("reproducir") + "<div>Recorrido automático<small>La portada avanza sola</small></div>"; rc.onclick = () => { cierraPanel(); pf.play = !pf.play; }; p.append(rc);
   };
   $("verMuestras").onclick = galeria;
 

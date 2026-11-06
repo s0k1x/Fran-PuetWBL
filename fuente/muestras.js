@@ -10,7 +10,7 @@
   ];
   function geoEscultura() {
     /* Tubo más grueso en el centro y afilado en los extremos, como una pieza tallada; mucho detalle en ordenador */
-    const S = tactil ? 520 : 960, Rr = tactil ? 18 : 30, gs = FORMAS.map(f => {
+    const S = tactil ? 640 : 1400, Rr = tactil ? 22 : 40, gs = FORMAS.map(f => {
       const c = new CurvaF(f), g = new THREE.TubeGeometry(c, S, .12, Rr, false), p = g.attributes.position, v = new THREE.Vector3(), q = new THREE.Vector3();
       for (let i = 0; i <= S; i++) { const u = i / S, k = .22 + .78 * Math.pow(Math.sin(Math.PI * u), .55); c.getPointAt(u, q); for (let j = 0; j <= Rr; j++) { const n = i * (Rr + 1) + j; v.fromBufferAttribute(p, n).sub(q).multiplyScalar(k).add(q); p.setXYZ(n, v.x, v.y, v.z); } }
       return g;
@@ -34,7 +34,7 @@
           diffuseColor.rgb = mix(vec3(.018, .018, .02) * (.8 + .4 * bt), vec3(1., .78, .42), bOro);`)
         .replace("#include <metalnessmap_fragment>", "#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 1., bOro);")
         .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, .24, bOro);")
-        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1., .72, .35) * bVeta * (1. - uOro) * .35;");
+        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1., .72, .35) * bVeta * (1. - uOro) * 1.6;");
     };
     return m;
   }
@@ -48,14 +48,14 @@
     const m = matEscultura(), esc = new THREE.Mesh(geoEscultura(), m); esc.position.y = 1.62; esc.castShadow = true; esc.morphTargetInfluences = [0, 0]; g.add(esc);
     /* Sin peana: la pieza flota sobre el suelo del estudio */
     /* Suelo de estudio infinito: pulido y que se funde en la oscuridad */
-    const suelo = new THREE.Mesh(new THREE.CircleGeometry(40, 64), new THREE.MeshStandardMaterial({ color: 0x040404, roughness: .34, metalness: 0, envMapIntensity: .06 }));
+    const suelo = new THREE.Mesh(new THREE.CircleGeometry(40, 64), new THREE.MeshStandardMaterial({ color: 0x030303, roughness: .82, metalness: 0, envMapIntensity: 0 }));
     suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true;
     suelo.material.onBeforeCompile = sh => { sh.vertexShader = "varying vec2 vP;\n" + sh.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvP = position.xy;"); sh.fragmentShader = "varying vec2 vP;\n" + sh.fragmentShader.replace("#include <dithering_fragment>", "#include <dithering_fragment>\ngl_FragColor.rgb *= 1. - smoothstep(1.2, 6.5, length(vP));"); };
     g.add(suelo);
     /* Anillo dorado que orbita */
     const anillo = new THREE.Mesh(new THREE.TorusGeometry(1.25, .012, 10, 160), new THREE.MeshStandardMaterial({ color: 0xd8c49c, metalness: 1, roughness: .2 })); anillo.position.y = 1.62; g.add(anillo);
     /* Luces de estudio: clave con sombra suave, contraluz cálido y relleno frío */
-    const clave = new THREE.DirectionalLight(0xfff4e6, 1.05); clave.position.set(2.5, 7, 2.5); clave.castShadow = true; clave.shadow.mapSize.set(1024, 1024); Object.assign(clave.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: .5, far: 15 }); clave.shadow.bias = -.0004; clave.shadow.normalBias = .02;
+    const clave = new THREE.DirectionalLight(0xfff4e6, .7); clave.position.set(2.5, 7, 2.5); clave.castShadow = true; clave.shadow.mapSize.set(1024, 1024); Object.assign(clave.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: .5, far: 15 }); clave.shadow.bias = -.0004; clave.shadow.normalBias = .02;
     /* Contraluces que recortan la silueta sobre el negro: uno cálido y otro frío */
     const contra = new THREE.DirectionalLight(0xffc98a, 3.2); contra.position.set(-4, 3, -4);
     const contra2 = new THREE.DirectionalLight(0xbcd0ff, 2.4); contra2.position.set(4.5, 2.2, -3.5);
@@ -78,6 +78,9 @@
     e.m.userData.oro.value = A.oro + (B.oro - A.oro) * t;
     S_ESC.rot += dt * (calmo ? 0 : .22); e.esc.rotation.y = S_ESC.rot; e.esc.position.y = 1.62 + (calmo ? 0 : Math.sin(now * .0009) * .06); e.esc.rotation.z = calmo ? 0 : Math.sin(now * .0005) * .05; e.anillo.rotation.set(Math.PI / 2 + Math.sin(now * .0004) * .35, 0, now * .00025); e.anillo.position.y = 1.62 + Math.sin(now * .0007) * .05;
     T.clip = 1000; corte.constant = 1000; renderer.toneMappingExposure = Aj.brillo; R.abObj = 0;
+    /* Plano cinematográfico: enfoque en la escultura y fondo suavemente desenfocado */
+    R.dof = calmo ? 0 : .3; R.foco = camera.position.distanceTo(pf.centro);
+    if (renderer.shadowMap.type !== THREE.PCFSoftShadowMap) { renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.shadowMap.needsUpdate = true; }
     if (!pf.sombraT || now - pf.sombraT > 120) { pf.sombraT = now; renderer.shadowMap.needsUpdate = true; }
     const alto = portada.clientHeight;
     if (Math.abs(portada.scrollTop - (pf.yUlt ?? -1)) > .5) { pf.yUlt = portada.scrollTop; secs.forEach(s => { const x = s.firstElementChild, r = s.getBoundingClientRect(), dd = Math.abs(r.top + r.height / 2 - alto / 2) / alto, o = Math.max(0, Math.min(1, 1.5 - dd * 2.1)); x.style.opacity = s === secs[0] ? Math.max(.25, o) : o; x.style.transform = `translateY(${(1 - o) * 26}px)`; }); }
@@ -91,7 +94,11 @@
     catch (e) { console.error(e); }
   };
   /* Al salir de la portada vuelven las luces de la escena */
-  const interfazBase = interfaz; interfaz = function (modo) { luces.visible = modo !== "portada" || !pf.escultura; const r = interfazBase(modo); medir(); return r; };
+  const interfazBase = interfaz; interfaz = function (modo) {
+    luces.visible = modo !== "portada" || !pf.escultura; const r = interfazBase(modo);
+    if (modo !== "portada") { R.dof = 0; const t = R.nivel >= 2 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap; if (renderer.shadowMap.type !== t) { renderer.shadowMap.type = t; renderer.shadowMap.needsUpdate = true; } }
+    PQ.w = 0; medir(); return r;
+  };
 
   /* ---------- Modelos de ejemplo hechos con código: materiales con nombre, así toman el realismo ---------- */
   /* Los mismos colores base que la villa (su MTL): así cada material se ve como debe */
@@ -203,5 +210,6 @@
     titulo(p, "Modelos de ejemplo");
     MUESTRAS.forEach((mu, i) => { const b = texto("button", "linea"); b.type = "button"; b.innerHTML = `${ico(["casa", "sofa", "techo", "flecha", "chispa"][i])}<div><span></span><small></small></div>`; b.querySelector("span").textContent = mu.n; b.querySelector("small").textContent = mu.d; b.onclick = () => abreMuestra(mu); p.append(b); });
     const g = texto("button", "linea"); g.type = "button"; g.innerHTML = ico("galeria") + "<div>Galería de proyectos<small>Casas publicadas para recorrer</small></div>"; g.onclick = galeria; p.append(g);
+    const rc = texto("button", "linea"); rc.type = "button"; rc.innerHTML = ico("reproducir") + "<div>Recorrido automático<small>La portada avanza sola</small></div>"; rc.onclick = () => { cierraPanel(); pf.play = !pf.play; }; p.append(rc);
   };
   $("verMuestras").onclick = galeria;

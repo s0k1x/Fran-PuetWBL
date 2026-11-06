@@ -417,13 +417,15 @@
     const v = renderer.getDrawingBufferSize(new THREE.Vector2()), w = v.x, h = v.y; if (w === PQ.w && h === PQ.h && PQ.hdr) return; PQ.w = w; PQ.h = h;
     ["hdr", "pre", "ao1", "ao2"].forEach(k => PQ[k] && PQ[k].dispose()); (PQ.bl || []).forEach(x => { x.a.dispose(); x.b.dispose(); });
     /* Profundidad de 24 bits: con 16 las superficies cercanas se pelean a distancia y salen rayas */
-    PQ.hdr = rt(w, h, { depthBuffer: true, samples: R.capturando ? 0 : R.nivel >= 2 ? 4 : 2, depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType) }); PQ.hdr.ignoreDepthForMultisampleCopy = false;
+    PQ.hdr = rt(w, h, { depthBuffer: true, samples: R.capturando ? 0 : R.nivel >= 2 || heroe() ? 4 : 2, depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType) }); PQ.hdr.ignoreDepthForMultisampleCopy = false;
     const hw = w >> 1, hh = h >> 1;
     PQ.pre = rt(hw, hh, { type: THREE.UnsignedByteType, depthBuffer: true, depthTexture: new THREE.DepthTexture(hw, hh, THREE.UnsignedIntType), minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
     PQ.ao1 = rt(hw, hh, { type: THREE.UnsignedByteType }); PQ.ao2 = rt(hw, hh, { type: THREE.UnsignedByteType });
     PQ.bl = []; let bw = hw >> 1, bh = hh >> 1; for (let i = 0; i < 4; i++) { PQ.bl.push({ a: rt(bw, bh), b: rt(bw, bh), w: bw, h: bh }); bw = Math.max(1, bw >> 1); bh = Math.max(1, bh >> 1); }
   }
-  const usaPost = () => R.nivel >= 1 && PQ.listo && R.activo && !(renderer.xr && renderer.xr.isPresenting);
+  /* La portada con escultura es una escena diminuta: siempre lleva el tratamiento de Ultra */
+  const heroe = () => T.modo === "portada" && !!(typeof pf !== "undefined" && pf.escultura);
+  const usaPost = () => !(renderer.xr && renderer.xr.isPresenting) && (heroe() ? preparaPost() : R.nivel >= 1 && PQ.listo && R.activo);
   /* Casa abierta (sin techo, por plantas o en maqueta): sin sombras interiores y con luz plena para verlo todo */
   function casaAbierta() {
     if (!R.activo) return;
@@ -507,7 +509,7 @@
     tamPost();
     if (renderer.toneMapping !== THREE.NoToneMapping) renderer.toneMapping = THREE.NoToneMapping;
     renderer.setRenderTarget(PQ.hdr); renderer.render(scene, camera);
-    const ao = R.nivel >= 2;
+    const ao = R.nivel >= 2 || heroe();
     /* Si la cámara no se ha movido, la oclusión del fotograma anterior sigue valiendo: no se repite */
     const me = camera.matrixWorld.elements, fa = PQ.firmaAO || (PQ.firmaAO = new Float64Array(18)); let quieta = !R.aoSucio;
     for (let i = 0; i < 16; i++) if (fa[i] !== me[i]) { quieta = false; fa[i] = me[i]; }
@@ -524,13 +526,13 @@
       d.tA.value = PQ.ao2.texture; d.uDir.value.set(0, 1.5 / PQ.ao1.height); paso(PQ.mDes, PQ.ao1);
     }
     /* Resplandor: brillo → bajar → subir sumando */
-    const bl = PQ.bl, b = PQ.mBri.uniforms; b.tA.value = PQ.hdr.texture; b.uPx.value.set(.5 / PQ.w, .5 / PQ.h); b.uUmbral.value = 1.05; paso(PQ.mBri, bl[0].a);
+    const bl = PQ.bl, b = PQ.mBri.uniforms; b.tA.value = PQ.hdr.texture; b.uPx.value.set(.5 / PQ.w, .5 / PQ.h); b.uUmbral.value = heroe() ? 2.2 : 1.05; paso(PQ.mBri, bl[0].a);
     for (let i = 1; i < bl.length; i++) { const u = PQ.mBaja.uniforms; u.tA.value = bl[i - 1].a.texture; u.uPx.value.set(1 / bl[i - 1].w, 1 / bl[i - 1].h); paso(PQ.mBaja, bl[i].a); }
     for (let i = bl.length - 1; i > 0; i--) { const u = PQ.mSube.uniforms, src = i === bl.length - 1 ? bl[i].a : bl[i].b; u.tA.value = src.texture; u.tB.value = bl[i - 1].a.texture; u.uPx.value.set(.5 / bl[i].w, .5 / bl[i].h); u.uMez.value = 1; paso(PQ.mSube, bl[i - 1].b); }
     /* Exposición automática: como una cámara, mide la luz media cada pocos fotogramas */
     const f = PQ.mFin.uniforms; f.tHDR.value = PQ.hdr.texture; f.uPx.value.set(1 / PQ.w, 1 / PQ.h); f.uNit.value = tactil ? .38 : .28; f.tAO.value = PQ.ao1.texture; f.tBloom.value = bl[0].b.texture; f.uConAO.value = ao; f.uConBloom.value = true;
     f.tProf.value = PQ.hdr.depthTexture; f.uDof.value = R.dof || 0; f.uFoco.value = R.foco || 5; f.uFundido.value = R.fundido || 0; f.uCam.value.set(camera.near, camera.far);
-    f.uExp.value = renderer.toneMappingExposure * R.exp * R.expAuto; f.uT.value = R.t; f.uBloom.value = .06 + U_R.uNoche.value * .025;
+    f.uExp.value = renderer.toneMappingExposure * R.exp * R.expAuto; f.uT.value = R.t; f.uBloom.value = heroe() ? .075 : .06 + U_R.uNoche.value * .025; if (heroe()) f.uExp.value = renderer.toneMappingExposure * .72;
     paso(PQ.mFin, null);
   }
   /* Comparar dos estilos: mitad izquierda con uno y derecha con otro, separados por una línea movible */
