@@ -95,13 +95,24 @@
     if (pf.foto) { pf.foto = false; vista.toBlob(b => guardar(b, "portada.png"), "image/png"); }
   }
   const frameBase = framePortada;
-  framePortada = function (dt, now) { if (pf.listo && pf.escultura) return frameEscultura(dt, now); luces.visible = true; return frameBase(dt, now); };
+  /* Portada ligera: sin modelos 3D. El lienzo no pinta nada hasta que se abre un modelo (salvo que el dueño coloque uno en la portada) */
+  framePortada = function (dt, now) {
+    if (!pf.modelo) { if (renderer.domElement.style.visibility !== "hidden") renderer.domElement.style.visibility = "hidden"; return; }
+    renderer.domElement.style.visibility = ""; if (pf.listo && pf.escultura) return frameEscultura(dt, now); luces.visible = true; return frameBase(dt, now);
+  };
   montaPortada = async function () {
-    try { await entorno(); montaEscultura(); marcoPortada(); renderer.compile(scene, camera); pf.listo = true; vista.classList.add("lista"); aplicaAj(); }
+    try { pf.listo = true; vista.classList.add("lista"); aplicaAj(); revelaSecciones(); }
     catch (e) { console.error(e); }
   };
   /* Al salir de la portada vuelven las luces de la escena */
+  /* Las secciones aparecen al entrar en pantalla, sin trabajo por fotograma */
+  function revelaSecciones() {
+    if (!("IntersectionObserver" in window) || calmo) return;
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("visto"); io.unobserve(e.target); } }), { root: portada, threshold: .15 });
+    secs.forEach((s, i) => { if (i) { s.classList.add("revelable"); io.observe(s); } });
+  }
   const interfazBase = interfaz; interfaz = function (modo) {
+    renderer.domElement.style.visibility = modo === "portada" && !pf.modelo ? "hidden" : "";
     luces.visible = modo !== "portada" || !pf.escultura; const r = interfazBase(modo);
     if (modo !== "portada") { R.dof = 0; const t = R.nivel >= 2 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap; if (renderer.shadowMap.type !== t) { renderer.shadowMap.type = t; renderer.shadowMap.needsUpdate = true; } }
     PQ.w = 0; medir(); return r;
@@ -172,7 +183,7 @@
   /* Sala de exposición con el superdeportivo */
   function creaShowroom() {
     const g = new THREE.Group(), B = constructor(g);
-    B("hormigon_pulido", 22, .3, 18, -11, -.3, -9); B("estuco_blanco", 22, 5, .2, -11, 0, -9.2); B("estuco_blanco", .2, 5, 18, -11.2, 0, -9); B("estuco_blanco", .2, 5, 18, 11, 0, -9);
+    B("hormigon_pulido", 22, .3, 18, -11, -.3, -9); B("estuco_blanco", 22, 5, .2, -11, 0, -9.2); B("estuco_blanco", .2, 5, 18, -11.2, 0, -9); B("estuco_blanco", .2, 5, 18, 11, 0, -9); B("estuco_blanco", 22.4, 5, .2, -11.2, 0, 9);
     B("techo_blanco", 22.4, .2, 18.2, -11.2, 5, -9.2); B("marmol_negro", 7, .12, 4, -3.5, 0, -2);
     for (let i = -8; i <= 8; i += 4) B("luz_calida", .3, .03, 12, i - .15, 4.96, -6);
     const k = { caja: new THREE.Box3(V3(-2.4, .12, -1), V3(2.4, 1.3, 1)), faros: V3(3, .6, 0), nf: 1, suelo: .12 };
@@ -198,7 +209,7 @@
     { n: "Loft minimalista", d: "Salón-cocina, dormitorio y baño", foto: "loft", c: creaLoft },
     { n: "Pabellón de cristal", d: "Losa volada, mármol y lámina de agua", foto: "pabellon", c: creaPabellon },
     { n: "Superdeportivo", d: "Sala de exposición para rodearlo", foto: "superdeportivo", c: creaShowroom },
-    { n: "Galería con escultura", d: "Recorre la pieza de la portada", foto: "galeria", c: creaGaleriaArte }
+    { n: "Galería con escultura", d: "Una pieza escultórica en el centro", foto: "galeria", c: creaGaleriaArte }
   ];
   async function abreMuestra(mu) {
     $("galeria").hidden = true; cierraPanel();
@@ -226,7 +237,6 @@
     titulo(p, "Modelos de ejemplo");
     MUESTRAS.forEach((mu, i) => { const b = texto("button", "linea"); b.type = "button"; b.innerHTML = `${ico(["casa", "sofa", "techo", "flecha", "chispa"][i])}<div><span></span><small></small></div>`; b.querySelector("span").textContent = mu.n; b.querySelector("small").textContent = mu.d; b.onclick = () => abreMuestra(mu); p.append(b); });
     const g = texto("button", "linea"); g.type = "button"; g.innerHTML = ico("galeria") + "<div>Galería de proyectos<small>Casas publicadas para recorrer</small></div>"; g.onclick = galeria; p.append(g);
-    const rc = texto("button", "linea"); rc.type = "button"; rc.innerHTML = ico("reproducir") + "<div>Recorrido automático<small>La portada avanza sola</small></div>"; rc.onclick = () => { cierraPanel(); pf.play = !pf.play; }; p.append(rc);
   };
   $("verMuestras").onclick = galeria;
   /* Las posiciones de las secciones se recalculan solo cuando cambia el diseño */

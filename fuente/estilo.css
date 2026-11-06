@@ -671,3 +671,7 @@ html.claro .cifras span, html.claro #etiPlanta { color: #8b8a84; }
 /* Fotos de los modelos de ejemplo: el número flota sobre un degradado suave */
 .tarjetaG .img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(8, 8, 7, .62)); pointer-events: none; }
 .tarjetaG .num { z-index: 1; }
+/* Portada ligera: fondo oscuro estático y secciones que entran al verse */
+#portada { background: radial-gradient(120% 80% at 70% 0%, #17161a 0%, #0a0a0b 55%, #060606 100%); }
+#portada > section.revelable > * { opacity: 0; transform: translateY(18px); transition: opacity .5s var(--curva), transform .5s var(--curva); }
+#portada > section.revelable.visto > * { opacity: 1; transform: none; }
