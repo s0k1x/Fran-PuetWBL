@@ -33,24 +33,27 @@
       await new Promise(ok => { const t = setTimeout(ok, 2500); v.onseeked = () => { clearTimeout(t); ok(); }; v.currentTime = Math.min(1, (v.duration || 2) / 3); });
       p.video = v; p.lo = texDe(v, 1024); p.thumb = p.lo.image.toDataURL("image/jpeg", .7); p.ratio = v.videoWidth / v.videoHeight;
     } else {
-      const bm = await createImageBitmap(archivo); p.ratio = bm.width / bm.height; p.bm = bm;
-      p.lo = texDe(bm, tactil ? 1024 : 2048); const th = texDe(bm, 512); p.thumb = th.image.toDataURL("image/jpeg", .72); th.dispose();
+      /* Se decodifica ya reducida (fuera del hilo principal) y sin guardar el original: rápido y con poca memoria */
+      const bm = await createImageBitmap(archivo, { resizeWidth: tactil ? 1024 : 2048, resizeQuality: "high" }).catch(() => createImageBitmap(archivo));
+      p.ratio = bm.width / bm.height; p.lo = texDe(bm, tactil ? 1024 : 2048); bm.close && bm.close();
+      const th = texDe(p.lo.image, 512); p.thumb = th.image.toDataURL("image/jpeg", .72); th.dispose();
     }
     return p;
   }
   const nuevaSala = (tipo = "Estancia", nombre = tipo) => { const [an, la] = TIPOS[tipo] || TIPOS.Estancia; return { nombre, tipo, ancho: an, largo: la, alto: 2.6, puntos: [] }; };
   /* Sin IA: «salon 1», «salon-2»… van a la misma estancia; los nombres de cámara (IMG_0001) quedan cada uno en la suya */
-  function agrupaPorNombre(lista) {
-    const mapa = new Map(), salas = [];
-    lista.forEach(p => {
-      const base = p.archivo.name.replace(/\.[^.]+$/, ""), tipo = (PALABRAS.find(([r]) => r.test(base)) || [0, ""])[1], tallo = base.toLowerCase().replace(/[\s_\-().]*\d+$/, "").trim();
-      const clave = GENERICO.test(base) && !tipo ? Symbol() : (tipo || "") + "|" + tallo;
-      let s = mapa.get(clave);
-      if (!s) { s = nuevaSala(tipo || "Estancia", tipo || (GENERICO.test(base) ? "" : base.replace(/[\s_\-]*\d+$/, "").replace(/[_-]+/g, " ").slice(0, 28))); mapa.set(clave, s); salas.push(s); }
-      s.puntos.push(p);
-    });
-    return salas;
+  function claveDe(p) {
+    const base = p.archivo.name.replace(/\.[^.]+$/, ""), tipo = (PALABRAS.find(([r]) => r.test(base)) || [0, ""])[1], tallo = base.toLowerCase().replace(/[\s_\-().]*\d+$/, "").trim();
+    const gen = GENERICO.test(base) && !tipo;
+    return { clave: gen ? null : (tipo || "") + "|" + tallo, tipo: tipo || "Estancia", nombre: tipo || (gen ? "" : base.replace(/[\s_\-]*\d+$/, "").replace(/[_-]+/g, " ").slice(0, 28)) };
   }
+  /* Cada foto va a la estancia de su misma clave (también entre tandas); las demás, a una nueva */
+  function meteEn(salas, p) {
+    const c = claveDe(p); let s = c.clave && salas.find(q => q.clave === c.clave);
+    if (!s) { s = nuevaSala(c.tipo, c.nombre); s.clave = c.clave; salas.push(s); }
+    s.puntos.push(p); return s;
+  }
+  function agrupaPorNombre(lista) { const salas = []; lista.forEach(p => meteEn(salas, p)); return salas; }
   /* Nombres únicos: «Dormitorio 1», «Dormitorio 2»; las que no tienen nombre, «Estancia n» */
   function numera(salas) {
     const cuenta = {}; salas.forEach(s => { if (!s.nombre) s.nombre = "Estancia"; cuenta[s.nombre] = (cuenta[s.nombre] || 0) + 1; });
@@ -92,7 +95,12 @@
       const l = puntos(); TR.i = Math.max(0, Math.min(l.length - 1, i)); const p = l[TR.i];
       l.forEach(q => { if (q !== p && q.hi) { q.hi.dispose(); q.hi = null; } if (q !== p && q.video) q.video.pause(); });
       if (p.video) { if (!p.vt) { p.vt = new THREE.VideoTexture(p.video); p.vt.generateMipmaps = false; p.vt.minFilter = THREE.LinearFilter; p.vt.wrapS = THREE.RepeatWrapping; } p.video.play().catch(() => {}); }
-      else if (p.bm && !p.hi && maxTex() > p.lo.image.width) p.hi = texDe(p.bm, maxTex());
+      else if (!p.hi && !p.cargandoHi && maxTex() > p.lo.image.width) {
+        p.cargandoHi = true;
+        createImageBitmap(p.archivo, { resizeWidth: maxTex(), resizeQuality: "high" }).catch(() => createImageBitmap(p.archivo)).then(bm => {
+          p.cargandoHi = false; if (bm.width > p.lo.image.width && actual() === p && TR.activo) { p.hi = texDe(bm, maxTex()); actualizaMats(); } if (bm.close) bm.close();
+        }).catch(() => { p.cargandoHi = false; });
+      }
       TR.yaw = 0; TR.pitch = 0; actualizaMats();
     };
     if (!suave || calmo) return cambia();
@@ -150,7 +158,8 @@
       <button id="tOrg" class="tool" type="button">${ico("rejilla")}<span>Organizar</span></button>
       <button id="tMas" class="tool" type="button">${ico("subir")}<span>Añadir</span></button>
       <button id="tSig" class="tool" type="button" aria-label="Vista siguiente">${ico("flecha")}</button></div>
-    <input id="tArch" type="file" accept="image/*,video/*" multiple hidden></div>`);
+    <input id="tArch" type="file" accept="image/*,video/*" multiple hidden><input id="tCarp" type="file" webkitdirectory multiple hidden>
+    <div id="tSuelta" hidden>Suelta aquí tus fotos o vídeos 360</div></div>`);
   const tour = $("tour");
   $("tSalir").onclick = () => saleTour();
   $("tAnt").onclick = () => entra((TR.i - 1 + puntos().length) % puntos().length);
@@ -160,6 +169,13 @@
   $("tMas").onclick = () => $("tArch").click();
   $("tArch").onchange = e => { const f = [...e.target.files]; e.target.value = ""; if (f.length) abreTour(f, true); };
   $("tOrg").onclick = () => organizador();
+  $("tCarp").onchange = e => { const f = [...e.target.files]; e.target.value = ""; if (f.length) abreTour(f, true); };
+  /* Soltar archivos sobre la visita los añade a la casa */
+  let sueltaN = 0;
+  tour.addEventListener("dragenter", e => { if (![...(e.dataTransfer.types || [])].includes("Files")) return; e.preventDefault(); e.stopPropagation(); sueltaN++; $("tSuelta").hidden = false; });
+  tour.addEventListener("dragover", e => { e.preventDefault(); e.stopPropagation(); });
+  tour.addEventListener("dragleave", e => { e.stopPropagation(); if (--sueltaN <= 0) { sueltaN = 0; $("tSuelta").hidden = true; } });
+  tour.addEventListener("drop", e => { e.preventDefault(); e.stopPropagation(); sueltaN = 0; $("tSuelta").hidden = true; const f = [...e.dataTransfer.files]; if (f.length) abreTour(f, true); });
   addEventListener("keydown", e => {
     if (!TR.activo || /^(text|number|search|range)$/.test(e.target.type) || e.target.tagName === "SELECT") return;
     if (e.key === "Escape") { if (!$("ficha").hidden) cierraOrg(); else saleTour(); }
@@ -232,7 +248,7 @@
       ["Agrupar por nombre", () => { const l = puntos().sort((a, b) => nat.compare(a.archivo.name, b.archivo.name)); l.forEach(p => { p.auto = true; }); reagrupa(agrupaPorNombre(l), "Agrupadas por nombre de archivo."); }],
       ["Separar todas", () => { const l = puntos(); l.forEach(p => { p.auto = true; }); reagrupa(l.map(p => { const s = nuevaSala(); s.puntos.push(p); return s; }), "Una estancia por foto."); }],
       ["Por fecha", () => { TR.salas.forEach(s => s.puntos.sort((a, b) => a.fecha - b.fecha)); TR.salas.sort((a, b) => Math.min(...a.puntos.map(p => p.fecha)) - Math.min(...b.puntos.map(p => p.fecha))); rehace(); aviso("Ordenadas por fecha."); }]));
-    f.append(fila(["Añadir fotos", () => $("tArch").click()], ["Listo", cierraOrg]));
+    f.append(fila(["Añadir fotos", () => $("tArch").click()], ["Añadir carpeta", () => $("tCarp").click()], ["Listo", cierraOrg]));
     pinta();
   }
   /* La IA mira todas las fotos: junta las de la misma estancia aunque estén tomadas desde otro punto,
@@ -258,24 +274,32 @@
       const juntas = l.length - salas.length; aviso(`${salas.length} estancias${juntas > 0 ? `: ${juntas} ${juntas > 1 ? "fotos se han juntado" : "foto se ha juntado"} con otras de la misma estancia` : ""}. Revisa medidas y giro si hace falta.`);
     } catch (e) { aviso(motivo(e)); }
   }
-  function libera(p) { [p.lo, p.hi, p.vt].forEach(t => t && t.dispose()); if (p.bm && p.bm.close) p.bm.close(); if (p.video) { p.video.pause(); URL.revokeObjectURL(p.video.src); } }
+  function libera(p) { [p.lo, p.hi, p.vt].forEach(t => t && t.dispose()); if (p.video) { p.video.pause(); URL.revokeObjectURL(p.video.src); } }
 
   /* ---------- Entrar y salir ---------- */
+  let colaN = 0, colaHechas = 0, rehaceT = 0;
+  const rehaceLuego = () => { clearTimeout(rehaceT); rehaceT = setTimeout(() => { construyeCasa(); }, 150); };
   async function abreTour(archivos, anadir) {
-    const vale = archivos.filter(f => ES_IMG.test(f.name) || ES_VIDEO.test(f.name) || /^(image|video)\//.test(f.type));
+    const vale = archivos.filter(f => ES_IMG.test(f.name) || ES_VIDEO.test(f.name) || /^(image|video)\//.test(f.type)).sort((a, b) => nat.compare(a.name, b.name));
     if (!vale.length) return aviso("Elige fotos o vídeos 360 (JPG, PNG, WEBP, MP4 o WEBM).");
     if (!anadir && TR.salas.length) { puntos().forEach(libera); TR.salas = []; TR.i = 0; }
-    const dentro = TR.activo; if (!dentro) ocupado(true);
-    try {
-      if (!TR.escena) { TR.escena = new THREE.Scene(); TR.escena.background = new THREE.Color(0x0b0b0c); }
-      let raras = 0; const nuevos = [];
-      vale.sort((a, b) => nat.compare(a.name, b.name));
-      for (let k = 0; k < vale.length; k++) { const t = `Preparando foto 360 ${k + 1} de ${vale.length}`; if (dentro) aviso(t); else await estado(t); const p = await leePano(vale[k]); if (Math.abs(p.ratio - 2) > .25) raras++; nuevos.push(p); }
-      const antes = puntos().length; TR.salas.push(...agrupaPorNombre(nuevos)); numera(TR.salas); construyeCasa();
-      if (!dentro) { ocupado(false); entraTour(); }
-      activa(anadir ? antes : 0, false);
-      aviso(raras ? `${raras} ${raras > 1 ? "fotos no tienen" : "foto no tiene"} proporción 2:1 y puede verse deformada.` : puntos().length > 1 ? `${puntos().length} fotos en ${TR.salas.length} estancias.${iaLista() ? " En Organizar, la IA junta las de la misma estancia." : ""}` : "Arrastra para mirar alrededor.");
-    } catch (e) { console.error(e); if (dentro) aviso(motivo(e)); else fallo(motivo(e)); }
+    if (!TR.escena) { TR.escena = new THREE.Scene(); TR.escena.background = new THREE.Color(0x0b0b0c); }
+    const lista = vale.slice(); let raras = 0;
+    const mete = p => { if (Math.abs(p.ratio - 2) > .25) raras++; meteEn(TR.salas, p); numera(TR.salas); };
+    if (!TR.activo) {
+      ocupado(true);
+      try { await estado(vale.length > 1 ? `Abriendo la primera de ${vale.length} fotos 360` : "Preparando la foto 360"); mete(await leePano(lista.shift())); construyeCasa(); ocupado(false); entraTour(); activa(0, false); }
+      catch (e) { console.error(e); return fallo(motivo(e)); }
+    }
+    if (!lista.length) { aviso(raras ? "La foto no tiene proporción 2:1 y puede verse deformada." : "Arrastra para mirar alrededor."); return; }
+    /* El resto, de cuatro en cuatro mientras ya recorres la primera */
+    colaN += lista.length; const errores = [];
+    const progreso = () => aviso(colaHechas < colaN ? `Añadiendo fotos 360 · ${colaHechas} de ${colaN}` : `${puntos().length} fotos en ${TR.salas.length} estancias.${errores.length ? ` ${errores.length} no se han podido leer.` : ""}${raras ? ` ${raras} sin proporción 2:1.` : ""}${iaLista() && puntos().length > 1 ? " En Organizar, la IA junta las de la misma estancia." : ""}`);
+    progreso();
+    const trabajador = async () => { while (lista.length) { const f = lista.shift(); try { mete(await leePano(f)); rehaceLuego(); } catch (e) { errores.push(f.name); } colaHechas++; progreso(); } };
+    await Promise.all(Array.from({ length: Math.min(4, lista.length) }, trabajador));
+    construyeCasa(); if (colaHechas >= colaN) { colaN = colaHechas = 0; }
+    if (!$("ficha").hidden && $("ficha").classList.contains("tEd")) organizador();
   }
   function entraTour() {
     if (TR.activo) return; TR.activo = true; T.modo = "tour"; cierraPanel(); $("galeria").hidden = true;
@@ -295,6 +319,7 @@
     return cargarBase(archivos, ruta);
   };
   const abre360 = () => { if (TR.salas.length) { entraTour(); activa(TR.i, false); } else $("tArch").click(); };
+  /* Abrir una carpeta entera desde la portada también va a la visita */
   $("verMuestras").insertAdjacentHTML("afterend", '<button id="ver360" type="button">Fotos 360</button>'); $("ver360").onclick = abre360;
   const vista360 = BOTONES.vista;
   BOTONES.vista = function (p) { vista360(p); const b = texto("button", "linea"); b.type = "button"; b.innerHTML = ico("camara") + "<div>Visita 360<small>Sube tus fotos o vídeos 360 y monta la casa</small></div>"; b.onclick = () => { cierraPanel(); abre360(); }; p.firstElementChild.after(b); };
