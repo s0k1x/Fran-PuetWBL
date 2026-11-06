@@ -464,7 +464,7 @@
   /* Escalado inteligente (Básica): la escena se calcula al 70 % de resolución y un paso barato la amplía
      con realce de bordes. La mitad de píxeles que sombrear, casi el doble de fluidez, sin pérdida visible */
   const ES = { rt: null, w: 0, h: 0 };
-  const escaladoActivo = () => Aj.escalado !== false && !R.capturando && renderer.capabilities.isWebGL2 && !(renderer.xr && renderer.xr.isPresenting);
+  const escaladoActivo = () => Aj.escalado !== false && !R.capturando && !(T.modo === "portada" && pf.escultura) && renderer.capabilities.isWebGL2 && !(renderer.xr && renderer.xr.isPresenting);
   const mEsc = new THREE.ShaderMaterial({ uniforms: { tA: { value: null }, uPx: { value: new THREE.Vector2() }, uNit: { value: .5 } }, vertexShader: VS_Q, depthTest: false, depthWrite: false,
     fragmentShader: `varying vec2 vUv; uniform sampler2D tA; uniform vec2 uPx; uniform float uNit;
       vec3 srgb(vec3 c) { return mix(c * 12.92, pow(c, vec3(.41666)) * 1.055 - .055, step(.0031308, c)); }
@@ -497,7 +497,7 @@
     const cerca = T.modo === "portada" ? .35 : T.modo === "orbita" || T.modo === "vuelo" ? .15 : .05;
     if (camera.near !== cerca) { camera.near = cerca; camera.far = 1500; camera.updateProjectionMatrix(); }
     /* Exposición automática: solo aclara dentro de casa; fuera manda el cielo */
-    if (R.activo) { const d = camDentro() * (1 - R.abS), med = 1.38, obj = 1 + (med - 1) * d; R.expAuto += (obj - R.expAuto) * (calmo ? 1 : .05); } else R.expAuto = 1;
+    if (R.activo) { const d = camDentro() * (1 - R.abS), med = 1.16, obj = 1 + (med - 1) * d; R.expAuto += (obj - R.expAuto) * (calmo ? 1 : .05); } else R.expAuto = 1;
     if (!usaPost()) {
       const tm = renderer.toneMapping; if (tm !== THREE.ACESFilmicToneMapping) { renderer.toneMapping = THREE.ACESFilmicToneMapping; }
       const e = renderer.toneMappingExposure; renderer.toneMappingExposure = e * (R.activo ? R.exp * R.expAuto : 1);

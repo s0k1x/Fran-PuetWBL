@@ -159,7 +159,7 @@
   }
 
   /* ---------- Estilos de decoración: cambian suelos, paredes, maderas, telas y metales de toda la casa ---------- */
-  const GRUPOS = { suelo: ["madera_suelo", "porcelanico_gris", "marmol_blanco", "marmol_crema"], paredes: ["estuco_blanco", "pintura_crema"], madera: ["nogal", "madera_calida", "lacado_arena"], telaA: ["tela_crema", "tela_arena", "alfombra", "panel_tapizado"], telaB: ["tela_gris", "tela_acento", "alfombra_oscura"], metal: ["laton", "metal_negro", "acero"] };
+  const GRUPOS = { suelo: ["madera_suelo", "porcelanico_gris", "marmol_blanco", "marmol_crema"], paredes: ["estuco_blanco", "pintura_crema"], techo: ["techo_blanco"], madera: ["nogal", "madera_calida", "lacado_arena"], telaA: ["tela_crema", "tela_arena", "alfombra", "panel_tapizado"], telaB: ["tela_gris", "tela_acento", "alfombra_oscura"], metal: ["laton", "metal_negro", "acero"] };
   const TIPOS_SUELO = { madera: { t: "madera", e: 2.6, rm: 1 / .363, r: .42 }, marmol: { t: "marmol", e: 3.4, rm: 1 / .086, r: .09 }, porcelanico: { t: "porcelanico", e: 1.2, r: .16 }, hormigon: { t: "hormigon", e: 3, rm: 1 / .829, r: .3 }, piedra: { t: "piedra", e: 1.2, r: .7 } };
   const METALES = { laton: [0xd7ae6a, .26], negro: [0x1b1c1e, .42], acero: [0xc9cdd2, .32] };
   const ESTILOS = {
@@ -168,6 +168,7 @@
     "Mediterráneo": { suelo: { tipo: "porcelanico", color: "#d9b79a" }, paredes: "#f7f2e8", madera: "#9c7550", telaA: "#efe8da", telaB: "#4f6f8f", metal: "laton" },
     "Industrial": { suelo: { tipo: "hormigon", color: "#9a9893" }, paredes: "#bdbab4", madera: "#5a3e2b", telaA: "#8a8479", telaB: "#3b3b3a", metal: "negro" },
     "Japandi": { suelo: { tipo: "madera", color: "#c9b293" }, paredes: "#ece7dd", madera: "#86674a", telaA: "#d6cdbd", telaB: "#6e695e", metal: "negro" },
+    "Oscuro": { suelo: { tipo: "marmol", color: "#2a2827" }, paredes: "#2e2d2b", techo: "#1d1c1b", madera: "#3a2a1f", telaA: "#3b3936", telaB: "#1c1c1c", metal: "negro" },
     "Lujo clásico": { suelo: { tipo: "marmol", color: "#f2efe9" }, paredes: "#efe6d6", madera: "#4b3122", telaA: "#ece3d2", telaB: "#2f4a3c", metal: "laton" }
   };
   const ORIG = new Map();
@@ -180,7 +181,7 @@
     if (!e) { if (!rapido) R.estilo = "Original"; return; }
     const tinta = (n, hex, t) => { const m = R.mats.get(n); if (!m || !hex) return; const md = MEDIAS[t || (m.userData.real && m.userData.real.t)] || 1; m.color.set(hex).multiplyScalar(1 / md); };
     if (e.suelo) GRUPOS.suelo.forEach(n => { const m = R.mats.get(n), ts = TIPOS_SUELO[e.suelo.tipo], u = m && m.userData.un; if (!m) return; if (ts && u && u.tC) { u.tC.value = cargaTex(ts.t + "_c", true); u.tN.value = cargaTex(ts.t.replace("_negro", "") + "_n"); if (u.tR && ts.rm) { u.tR.value = cargaTex(ts.t + "_r"); u.uRM.value = ts.rm; } u.uEsc.value.set(ts.e, ts.e * (ts.t === "madera" ? .5 : 1)); u.uMedia.value.setScalar(MEDIAS[ts.t] || 1); m.roughness = ts.r; } tinta(n, e.suelo.color, ts && ts.t); });
-    ["paredes", "madera", "telaA", "telaB"].forEach(k => GRUPOS[k].forEach(n => tinta(n, e[k])));
+    ["paredes", "techo", "madera", "telaA", "telaB"].forEach(k => e[k] && GRUPOS[k].forEach(n => tinta(n, e[k])));
     const mt = METALES[e.metal]; if (mt) GRUPOS.metal.forEach(n => { const m = R.mats.get(n); if (m) { m.color.setHex(mt[0]); m.roughness = mt[1]; m.metalness = 1; } });
     if (!rapido) R.estilo = typeof est === "string" ? est : (e.nombre || "Personalizado");
   }
