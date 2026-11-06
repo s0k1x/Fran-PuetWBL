@@ -95,8 +95,8 @@
     if (pf.foto) { pf.foto = false; vista.toBlob(b => guardar(b, "portada.png"), "image/png"); }
   }
   const frameBase = framePortada;
-  /* ---------- Portada: un busto clásico de mármol (Poly Haven, CC0) · 9 600 triángulos, 242 KB ---------- */
-  /* Solo la pieza, una luz con sombra suave y un contraluz: nada de escenario. Se pinta directo, sin posproceso */
+  /* ---------- Portada: un busto clásico de mármol (Poly Haven, CC0) · 17 500 triángulos, 436 KB ---------- */
+  /* Solo la pieza, una luz que proyecta sombra en el suelo (no sobre la propia pieza: evita parches) y un contraluz. Directo, sin posproceso */
   const BU = { cam: new THREE.PerspectiveCamera(28, 1, .05, 30), raton: [0, 0], suave: [0, 0], rot: 0 };
   function sombraContacto() {
     const c = document.createElement("canvas"); c.width = c.height = 128; const x = c.getContext("2d"), g = x.createRadialGradient(64, 64, 0, 64, 64, 64);
@@ -108,13 +108,13 @@
     await pide("loaders/GLTFLoader.js"); await pide("libs/meshopt_decoder.js");
     const L = new THREE.GLTFLoader(); L.setMeshoptDecoder(window.MeshoptDecoder);
     const gl = await new Promise((ok, ko) => L.load("modelos/busto.glb", ok, undefined, ko)), e = new THREE.Scene(), m = gl.scene;
-    m.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.material.envMapIntensity = .5; o.material.roughness = 1; } });
+    m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; o.material.envMapIntensity = .5; o.material.roughness = 1; o.material.normalScale.set(1.15, 1.15); for (const t of [o.material.map, o.material.normalMap, o.material.roughnessMap]) if (t) t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); } });
     const caja = new THREE.Box3().setFromObject(m), c = caja.getCenter(V3(0, 0, 0)), k = 1.6 / (caja.max.y - caja.min.y);
     m.scale.setScalar(k); m.position.set(-c.x * k, -caja.min.y * k, -c.z * k);
     const piv = new THREE.Group(); piv.add(m); e.add(piv);
     const clave = new THREE.DirectionalLight(0xffe7cc, 2.4), sc = clave.shadow.camera;
     clave.position.set(2.4, 3.2, 2.2); clave.castShadow = true; clave.shadow.mapSize.set(1024, 1024); clave.shadow.bias = -.0005; clave.shadow.normalBias = .015; clave.shadow.radius = 4;
-    sc.left = -1.1; sc.right = 1.1; sc.top = 1.9; sc.bottom = -.4; sc.near = .5; sc.far = 9; sc.updateProjectionMatrix();
+    sc.left = -2; sc.right = 2; sc.top = 2.6; sc.bottom = -1.2; sc.near = .5; sc.far = 9; sc.updateProjectionMatrix();
     const contra = new THREE.DirectionalLight(0x9fbaff, 1.5); contra.position.set(-2.6, 2.4, -2.4);
     const suelo = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), new THREE.ShadowMaterial({ opacity: .45 })); suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true;
     const contacto = sombraContacto(); contacto.scale.setScalar(1.1); contacto.position.y = .002;
